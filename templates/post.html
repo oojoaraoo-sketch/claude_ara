@@ -17,6 +17,12 @@
   <p class="meta">최초 작성 {{ post.created_at | date }} · 최종 갱신 {{ post.updated_at | date }}{% if post.revision > 1 %} (데이터 반영 {{ post.revision }}차){% endif %}</p>
   {% if site.adsense_client %}<ins class="adsbygoogle" style="display:block" data-ad-client="{{ site.adsense_client }}" data-ad-format="auto" data-full-width-responsive="true"></ins><script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>{% endif %}
   <div class="body">{{ post.html | safe }}</div>
+  {% if post.youtube_id %}
+  <section class="video">
+    <h2>1분 영상 요약</h2>
+    <iframe src="https://www.youtube-nocookie.com/embed/{{ post.youtube_id }}" title="{{ post.title }} 영상 요약" loading="lazy" allowfullscreen></iframe>
+  </section>
+  {% endif %}
   {% if post.tags %}<p class="tags">{% for t in post.tags %}<span>#{{ t }}</span>{% endfor %}</p>{% endif %}
 </article>
 {% if related %}

@@ -30,6 +30,7 @@ h2 { font-size: 1.25rem; margin-top: 2em; }
 .body th, .body td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .body th { background: var(--soft); }
 .body hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0 12px; }
+.video iframe { width: 100%; max-width: 360px; aspect-ratio: 9 / 16; border: 0; border-radius: 12px; display: block; }
 .tags span { display: inline-block; margin-right: 8px; color: var(--muted); font-size: .9rem; }
 .related { margin-top: 40px; }
 .foot { margin-top: 56px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; padding: 16px 0 32px; }

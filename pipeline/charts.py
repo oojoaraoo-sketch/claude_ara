@@ -33,11 +33,11 @@ def _style(ax):
     ax.set_axisbelow(True)
 
 
-def gu_trend(trend: list[tuple[str, int, float]], title: str, path) -> None:
+def gu_trend(trend: list[tuple[str, int, float]], title: str, path, figsize=(8, 4.2)) -> None:
     labels = [f"{ym[2:4]}.{ym[4:]}" for ym, _, _ in trend]
     counts = [n for _, n, _ in trend]
     meds = [m / 10000 for _, _, m in trend]
-    fig, ax = plt.subplots(figsize=(8, 4.2), dpi=110)
+    fig, ax = plt.subplots(figsize=figsize, dpi=110)
     _style(ax)
     ax.bar(labels, counts, color="#bfdbfe", label="거래 건수")
     ax.set_ylabel("거래 건수", color=INK)

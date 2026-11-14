@@ -81,11 +81,70 @@ def do_generate(conn, cfg, summary, fake=False):
         raise RuntimeError(f"계획된 {len(jobs)}건 중 발행 0건 — 확인 필요")
 
 
+def do_shorts(conn, cfg, summary, fake=False, tts_override=None):
+    from . import shorts, youtube
+    from .write import ClaudeWriter, FakeWriter
+    if not (cfg["safety"]["enabled"] and cfg["shorts"]["enabled"]):
+        log("숏폼 비활성화 → 건너뜀")
+        return
+    if tts_override:
+        cfg["shorts"]["tts_provider"] = tts_override
+    shorts.VIDEO_DIR.mkdir(exist_ok=True)
+    can_upload = cfg["youtube"]["upload"] and youtube.configured()
+
+    # 업로드 실패 등으로 파일이 사라진 영상은 다시 만들도록 기록 삭제 (Actions는 매번 새 환경)
+    if can_upload:
+        for v in conn.execute("SELECT slug FROM videos WHERE status != 'uploaded'").fetchall():
+            if not (shorts.VIDEO_DIR / f"{v['slug']}.mp4").exists():
+                conn.execute("DELETE FROM videos WHERE slug = ?", (v["slug"],))
+        conn.commit()
+
+    posts = shorts.plan(conn, cfg)
+    log(f"숏폼 {len(posts)}건 계획됨 (TTS: {cfg['shorts']['tts_provider']})")
+    writer = None
+    made, failed = [], []
+    for p in posts:
+        writer = writer or (FakeWriter() if fake else ClaudeWriter(cfg["generate"]["model"], cfg["generate"]["effort"]))
+        try:
+            ok, problems = shorts.produce(conn, cfg, writer, p)
+        except Exception as e:
+            ok, problems = False, [f"{type(e).__name__}: {e}"]
+        (made if ok else failed).append(p["slug"] if ok else {"slug": p["slug"], "problems": problems[:3]})
+        log(f"  {'영상 완성' if ok else '영상 실패'} {p['slug']} {'' if ok else problems[:2]}")
+
+    uploaded = []
+    if can_upload:
+        for v in conn.execute("SELECT * FROM videos WHERE status IN ('rendered','upload_failed')").fetchall():
+            path = shorts.VIDEO_DIR / f"{v['slug']}.mp4"
+            if not path.exists():
+                continue
+            try:
+                vid = youtube.upload(path, v["title"], v["description"], json.loads(v["tags"]),
+                                     cfg["youtube"]["privacy"], cfg["youtube"]["category_id"])
+                conn.execute("UPDATE videos SET status='uploaded', youtube_id=?, error=NULL, updated_at=? WHERE slug=?",
+                             (vid, db.now_iso(), v["slug"]))
+                uploaded.append(vid)
+                log(f"  YouTube 업로드 {v['slug']} → {vid}")
+            except Exception as e:
+                conn.execute("UPDATE videos SET status='upload_failed', error=?, updated_at=? WHERE slug=?",
+                             (str(e)[:500], db.now_iso(), v["slug"]))
+                log(f"  YouTube 업로드 실패 {v['slug']}: {e}")
+            conn.commit()
+    elif made:
+        log("  YouTube 자격 증명이 없어 업로드는 건너뜀 (영상은 videos/ 및 Actions 아티팩트로 보관)")
+    summary["shorts"] = {"made": made, "failed": failed, "uploaded": uploaded}
+    if writer:
+        summary["usage"] = writer.usage
+    if posts and not made:
+        raise RuntimeError(f"숏폼 {len(posts)}건 모두 실패")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("command", choices=["collect", "generate", "build", "all"])
+    ap.add_argument("command", choices=["collect", "generate", "build", "shorts", "all"])
     ap.add_argument("--demo", action="store_true", help="가상 데이터 + 가짜 작성기 (별도 DB 사용)")
     ap.add_argument("--fake-writer", action="store_true", help="Claude 대신 가짜 작성기")
+    ap.add_argument("--tts", choices=["edge", "google", "silent"], help="TTS 공급자 덮어쓰기")
     args = ap.parse_args(argv)
 
     cfg = load_config()
@@ -110,8 +169,11 @@ def main(argv=None):
         stage("collect", lambda: do_collect(conn, cfg, summary, demo=args.demo))
     if args.command in ("generate", "all"):
         stage("generate", lambda: do_generate(conn, cfg, summary, fake=args.demo or args.fake_writer))
+    if args.command in ("shorts", "all"):
+        stage("shorts", lambda: do_shorts(conn, cfg, summary, fake=args.demo or args.fake_writer,
+                                          tts_override=args.tts))
     if args.command in ("build", "all"):
-        stage("build", build)
+        stage("build", build)  # 업로드된 영상 ID를 글에 넣기 위해 숏폼 다음에 빌드
 
     status = "error" if summary["errors"] else "ok"
     db.finish_run(conn, run_id, status, summary)

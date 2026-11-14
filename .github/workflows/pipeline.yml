@@ -45,6 +45,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
           SITE_BASE_URL: ${{ vars.SITE_BASE_URL }}
+          GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         run: |
           set +e
           python -m pipeline.run all
@@ -61,6 +65,14 @@ jobs:
           git add data/pipeline.db data/last_run.json
           git diff --cached --quiet || git commit -m "data: daily update $(date -u +%F)"
           git push
+
+      - name: Keep rendered shorts (Actions > 실행 > Artifacts 에서 다운로드)
+        if: hashFiles('videos/*.mp4') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorts-${{ github.run_number }}
+          path: videos/
+          retention-days: 30
 
       - uses: actions/upload-pages-artifact@v3
         with:

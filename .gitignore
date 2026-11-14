@@ -2,5 +2,6 @@
 __pycache__/
 *.pyc
 public/
+videos/
 data/demo.db
 .env

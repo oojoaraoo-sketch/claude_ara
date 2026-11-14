@@ -49,7 +49,9 @@ def build(conn, cfg, out=PUBLIC_DIR) -> int:
 
     env = _env()
     md = markdown.Markdown(extensions=["tables"])
-    rows = conn.execute("SELECT * FROM posts ORDER BY updated_at DESC").fetchall()
+    rows = conn.execute(
+        """SELECT p.*, v.youtube_id FROM posts p LEFT JOIN videos v
+           ON v.slug = p.slug AND v.status = 'uploaded' ORDER BY p.updated_at DESC""").fetchall()
     posts = []
     for r in rows:
         p = dict(r)

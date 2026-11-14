@@ -49,6 +49,19 @@ CREATE TABLE IF NOT EXISTS rejections (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS videos (
+    slug TEXT PRIMARY KEY,            -- 원본 글 slug 와 동일
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    tags TEXT NOT NULL,
+    seconds REAL NOT NULL,
+    status TEXT NOT NULL,             -- rendered | uploaded | upload_failed
+    youtube_id TEXT,
+    error TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     started_at TEXT NOT NULL,

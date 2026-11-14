@@ -62,6 +62,54 @@ SYSTEM = """당신은 한국 부동산 실거래 데이터를 해설하는 데�
 - faq: 독자가 궁금해할 질문 3개와 답. 답에도 숫자 규칙 적용.
 """
 
+SHORTS_SCENES = ["hook", "volume", "price", "top_deal", "busy", "outro"]
+
+_scene = {
+    "type": "object",
+    "properties": {"headline": {"type": "string"}, "narration": {"type": "string"}},
+    "required": ["headline", "narration"],
+    "additionalProperties": False,
+}
+SHORTS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "hashtags": {"type": "array", "items": {"type": "string"}},
+        "scenes": {
+            "type": "object",
+            "properties": {k: _scene for k in SHORTS_SCENES},
+            "required": SHORTS_SCENES,
+            "additionalProperties": False,
+        },
+    },
+    "required": ["title", "description", "hashtags", "scenes"],
+    "additionalProperties": False,
+}
+
+SHORTS_SYSTEM = """당신은 부동산 데이터 숏폼(세로 영상, 약 40초) 대본 작가입니다.
+화면에는 시스템이 숫자 카드와 차트를 그리고, 당신은 장면별 짧은 제목(headline)과 내레이션(narration)을 씁니다.
+
+## 숫자 규칙 (가장 중요)
+- 모든 수치·금액·비율·건수·날짜는 facts 플레이스홀더 {{키}} 로만 씁니다. 아라비아 숫자를 직접 쓰지 마세요.
+- facts 값이 "비교 불가"/"자료 없음"이면 그 비교는 말하지 않습니다.
+
+## 장면 (순서 고정)
+- hook: 첫 2초에 시선을 끄는 질문이나 핵심 한 줄 (지역·월 언급)
+- volume: 거래 건수와 전월 대비 변화
+- price: 중위 거래가와 변화 (화면에 월별 추이 차트가 나옴)
+- top_deal: 이번 달 최고가 거래 단지·면적·금액
+- busy: 거래가 많았던 단지들 또는 동
+- outro: "단지별 표는 블로그에서 확인하세요" 취지의 마무리 (구독 권유는 한 마디 이하)
+
+## 형식
+- narration: 장면당 한두 문장, 숫자를 채웠을 때 60자 안팎. 구어체, 또박또박 읽히는 문장.
+- headline: 화면 상단 큰 글씨, 15자 이내.
+- title: 유튜브 제목 60자 이내, 끝에 #Shorts 를 붙이지 마세요(시스템이 붙임).
+- description: 2~3문장 요약. hashtags: 3~5개, # 없이.
+- 매수·매도 권유, 가격 전망 단정, 과장·낚시 표현 금지.
+"""
+
 KIND_GUIDE = {
     "gu_monthly": "구 단위 월간 아파트 매매 실거래 리포트입니다. 사용할 마커: [[TABLE:top10]], [[CHART]] (월별 거래량·중위가 추이).",
     "complex": "개별 아파트 단지의 실거래가 정리 페이지입니다. 사용할 마커: [[TABLE:areas]], [[TABLE:recent]], [[CHART]] (거래 시점별 가격 분포).",
@@ -118,6 +166,14 @@ class ClaudeWriter:
                      + "\n- ".join(feedback))
         return self._call(SYSTEM, user, ARTICLE_SCHEMA, self.effort, 16000)
 
+    def write_shorts(self, facts: dict, feedback: list[str] | None = None) -> dict:
+        user = ("사용 가능한 facts (플레이스홀더 = 현재 값):\n"
+                + "\n".join(f"- {{{{{k}}}}} = {v}" for k, v in facts.items())
+                + "\n\n규칙에 따라 숏폼 대본을 작성하세요.")
+        if feedback:
+            user += "\n\n이전 대본이 아래 이유로 반려되었습니다. 모두 고치세요:\n- " + "\n- ".join(feedback)
+        return self._call(SHORTS_SYSTEM, user, SHORTS_SCHEMA, self.effort, 8000)
+
     def review(self, rendered_md: str, facts: dict) -> dict:
         system = (
             "당신은 부동산 데이터 기사 편집장입니다. 발행 전 최종 검수를 합니다. "
@@ -167,6 +223,22 @@ class FakeWriter:
             "body_md": body,
             "faq": [{"question": "자료 출처는 어디인가요?",
                      "answer": "국토교통부 실거래가 공개 자료이며 {{as_of}} 기준입니다."}] * 3,
+        }
+
+    def write_shorts(self, facts: dict, feedback: list[str] | None = None) -> dict:
+        s = lambda h, n: {"headline": h, "narration": n}  # noqa: E731
+        return {
+            "title": "{{month}} {{region}} 아파트 거래 {{trade_count}}, 최고가는?",
+            "description": "{{region}} 아파트 실거래를 정리했습니다. 단지별 표는 블로그에서 확인하세요.",
+            "hashtags": ["실거래가", "부동산", "{{region}}"],
+            "scenes": {
+                "hook": s("{{region}} 실거래", "{{month}} {{region}} 아파트, 얼마에 거래됐을까요?"),
+                "volume": s("거래량", "거래는 {{trade_count}}로 전월보다 {{count_change}} 변했습니다."),
+                "price": s("중위 거래가", "중위 거래가는 {{median_price}}, 전월 대비 {{median_change}}입니다."),
+                "top_deal": s("최고가 거래", "최고가는 {{top_apt}} {{top_area}}, {{top_price}}였습니다."),
+                "busy": s("거래 많은 단지", "거래가 가장 많은 단지는 {{busy1_apt}}였습니다."),
+                "outro": s("자세한 표는 블로그", "단지별 상세 표는 블로그에서 확인하세요."),
+            },
         }
 
     def review(self, rendered_md: str, facts: dict) -> dict:

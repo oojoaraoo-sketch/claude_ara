@@ -99,5 +99,38 @@ class EndToEndTest(unittest.TestCase):
             conn.close()
 
 
+class ShortsTest(unittest.TestCase):
+    def test_script_check_and_render(self):
+        from pipeline import shorts
+        cfg = load_config()
+        cfg["shorts"]["tts_provider"] = "silent"
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = db.connect(Path(tmp) / "t.db")
+            today = date(2026, 11, 14)
+            db.upsert_trades(conn, make_trades(["11680"], today=today))
+            for job in generate.plan(conn, cfg, today):
+                if job["kind"] == "gu_monthly":
+                    generate.produce(conn, cfg, FakeWriter(), job, "2026-11-14")
+            posts = shorts.plan(conn, cfg)
+            self.assertTrue(posts)
+            facts = __import__("json").loads(posts[0]["facts_json"])
+
+            bad = FakeWriter().write_shorts(facts)
+            bad["scenes"]["volume"]["narration"] = "거래가 777건 늘었습니다."
+            self.assertTrue(any("777" in p for p in shorts.check_script(bad, facts, cfg)))
+            self.assertEqual(shorts.check_script(FakeWriter().write_shorts(facts), facts, cfg), [])
+
+            ok, problems = shorts.produce(conn, cfg, FakeWriter(), posts[0], Path(tmp) / "v")
+            self.assertTrue(ok, problems)
+            self.assertTrue((Path(tmp) / "v" / f"{posts[0]['slug']}.mp4").stat().st_size > 10000)
+            v = conn.execute("SELECT * FROM videos").fetchone()
+            self.assertTrue(v["title"].endswith("#Shorts"))
+            self.assertIn("/posts/", v["description"])
+            self.assertLessEqual(v["seconds"], cfg["shorts"]["max_seconds"])
+            # 이미 영상이 있는 글은 다시 계획되지 않음
+            self.assertNotIn(posts[0]["slug"], [p["slug"] for p in shorts.plan(conn, cfg)])
+            conn.close()
+
+
 if __name__ == "__main__":
     unittest.main()

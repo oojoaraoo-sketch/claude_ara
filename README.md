@@ -41,6 +41,39 @@
 - **상태 확인**: Actions 실행 화면의 Summary, 또는 `data/last_run.json` (발행/반려 목록, 토큰 사용량).
 - **비용 조절**: `config.toml`의 `max_new_posts_per_run`, `model`, `effort`, `llm_review`.
 
+## Phase 2: 숏폼 영상 (YouTube Shorts)
+
+월간 리포트 글마다 약 30~45초 세로 영상(1080x1920)을 자동으로 만듭니다(하루 최대 2편).
+Claude가 장면별 대본을 쓰되 블로그와 같은 플레이스홀더 규칙을 따르므로 영상 속 숫자도 원자료와 일치합니다.
+설명란에는 블로그 글 링크가 들어가고, 업로드된 영상은 블로그 글 하단에 자동으로 임베드됩니다.
+
+```
+글(facts) → 대본(Claude, 자동 검수) → 음성(TTS) → 장면 이미지 6장 → ffmpeg 합성 → YouTube 업로드
+```
+
+**YouTube 연결 (사용자가 직접, 최초 1회)**
+1. console.cloud.google.com → 새 프로젝트 → "YouTube Data API v3" 사용 설정.
+2. OAuth 동의 화면 구성(외부, 앱 이름 입력, 테스트 사용자에 본인 계정 추가) → 게시 상태를 **프로덕션**으로 전환
+   (테스트 상태로 두면 리프레시 토큰이 7일 후 만료됩니다).
+3. 사용자 인증 정보 → OAuth 클라이언트 ID → 유형 **데스크톱 앱** → 클라이언트 ID/보안 비밀 복사.
+4. 내 PC에서:
+   ```powershell
+   $env:YT_CLIENT_ID="..."; $env:YT_CLIENT_SECRET="..."
+   .venv\Scripts\python.exe -m pipeline.youtube auth
+   ```
+   브라우저에서 채널 계정으로 로그인 → 출력되는 리프레시 토큰 복사.
+5. GitHub Secrets에 `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` 저장.
+6. **중요**: 감사(audit)를 받지 않은 API 프로젝트로 올린 영상은 YouTube가 강제로 **비공개**로 잠급니다.
+   공개 업로드를 하려면 YouTube API 감사 신청 양식(YouTube API Services - Audit and Quota Extension Form)을 제출해야 합니다.
+   승인 전까지는 영상이 비공개로 쌓이며, 승인 후 YouTube Studio에서 공개로 바꿀 수 있습니다.
+
+YouTube 키가 없으면 영상은 업로드되지 않고 Actions 실행 화면의 Artifacts(`shorts-번호`)로 30일간 보관됩니다.
+
+**음성(TTS)**: 기본값 `edge`는 무료지만 Microsoft의 비공식 경로라 언제든 막힐 수 있고 상업적 이용 조건이 불명확합니다.
+수익화가 시작되면 Google Cloud Text-to-Speech(`tts_provider = "google"`, Secret `GOOGLE_TTS_API_KEY`)로 바꾸는 것을 권장합니다.
+
+데모 영상 만들기: `.venv\Scripts\python.exe -m pipeline.run shorts --demo --tts edge` → `videos/` 폴더
+
 ## 다음 단계
-- Phase 2: 같은 데이터로 숏폼 영상 자동 생성(차트 애니메이션 + TTS) → YouTube/TikTok 업로드(각 플랫폼 앱 심사 필요)
-- Phase 3: Search Console·YouTube Analytics 성과를 주간으로 읽어 주제·제목·프롬프트를 스스로 조정하는 개선 루프, 인스타그램 연동
+- TikTok 업로드(Content Posting API — 앱 심사 전에는 비공개 게시만 가능), Instagram Reels(Graph API, 비즈니스 계정 필요)
+- Phase 3: Search Console·YouTube Analytics 성과를 주간으로 읽어 주제·제목·프롬프트를 스스로 조정하는 개선 루프
