@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>{{ site.title }}</h1>
+  <p>{{ site.tagline }}</p>
+</section>
+<section>
+  <h2>지역별 보기</h2>
+  <div class="chips">{% for code, gu in regions.items() %}<a href="{{ site.base_path }}/region/{{ gu.slug }}/">{{ gu.name }}</a>{% endfor %}</div>
+</section>
+{% if reports %}
+<section>
+  <h2>최신 월간 리포트</h2>
+  <ul class="list">{% for p in reports %}<li><a href="{{ p.url }}">{{ p.title }}</a><small>{{ p.updated_at | date }} 갱신</small></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if complexes %}
+<section>
+  <h2>최근 갱신된 단지</h2>
+  <ul class="list">{% for p in complexes %}<li><a href="{{ p.url }}">{{ p.title }}</a><small>{{ p.updated_at | date }} 갱신</small></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if not total %}<p>아직 발행된 글이 없습니다.</p>{% endif %}
+{% endblock %}

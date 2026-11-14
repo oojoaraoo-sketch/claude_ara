@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site.title }}{% endblock %}</title>
+<meta name="description" content="{% block description %}{{ site.tagline }}{% endblock %}">
+<link rel="canonical" href="{% block canonical %}{{ site.base_url }}/{% endblock %}">
+<link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="{{ site.base_path }}/feed.xml">
+<link rel="stylesheet" href="{{ site.base_path }}/static/style.css">
+{% if site.google_site_verification %}<meta name="google-site-verification" content="{{ site.google_site_verification }}">{% endif %}
+{% if site.adsense_client %}<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site.adsense_client }}" crossorigin="anonymous"></script>{% endif %}
+{% block head %}{% endblock %}
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="{{ site.base_path }}/">{{ site.title }}</a>
+    <nav><a href="{{ site.base_path }}/about/">소개</a></nav>
+  </div>
+</header>
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+<footer class="foot">
+  <div class="wrap">
+    <p>자료: 국토교통부 실거래가 공개시스템 · {{ build_date }} 갱신 · 정보 제공 목적이며 투자 권유가 아닙니다.</p>
+    <p><a href="{{ site.base_path }}/about/">소개</a> · <a href="{{ site.base_path }}/privacy/">개인정보처리방침</a> · <a href="{{ site.base_path }}/feed.xml">RSS</a></p>
+  </div>
+</footer>
+</body>
+</html>

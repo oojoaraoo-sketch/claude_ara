@@ -1,0 +1,35 @@
+:root {
+  --bg: #ffffff; --fg: #1f2933; --muted: #6b7280; --line: #e5e7eb;
+  --accent: #2563eb; --soft: #f3f6fb;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111418; --fg: #e5e7eb; --muted: #9ca3af; --line: #2a2f36; --accent: #60a5fa; --soft: #1a1f26; }
+  .body img { background: #fff; border-radius: 6px; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 17px/1.75 -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; word-break: keep-all; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+.top { border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; justify-content: space-between; align-items: center; height: 56px; }
+.brand { font-weight: 700; color: var(--fg); }
+.hero { padding: 32px 0 8px; }
+.hero h1 { margin: 0 0 4px; font-size: 1.8rem; }
+.hero p { margin: 0; color: var(--muted); }
+h1 { font-size: 1.6rem; line-height: 1.35; }
+h2 { font-size: 1.25rem; margin-top: 2em; }
+.meta, .crumbs, small { color: var(--muted); font-size: .85rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips a { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: .9rem; color: var(--fg); }
+.list { list-style: none; padding: 0; }
+.list li { padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; }
+.body img { max-width: 100%; height: auto; display: block; margin: 16px 0; }
+.body table { width: 100%; border-collapse: collapse; font-size: .88rem; display: block; overflow-x: auto; }
+.body th, .body td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.body th { background: var(--soft); }
+.body hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0 12px; }
+.tags span { display: inline-block; margin-right: 8px; color: var(--muted); font-size: .9rem; }
+.related { margin-top: 40px; }
+.foot { margin-top: 56px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; padding: 16px 0 32px; }

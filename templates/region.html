@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ gu.name }} 아파트 실거래가 | {{ site.title }}{% endblock %}
+{% block description %}{{ group_name }} {{ gu.name }} 아파트 매매 실거래가 월간 리포트와 단지별 시세 정리.{% endblock %}
+{% block canonical %}{{ site.base_url }}/region/{{ gu.slug }}/{% endblock %}
+{% block content %}
+<h1>{{ group_name }} {{ gu.name }} 아파트 실거래가</h1>
+{% if reports %}<h2>월간 리포트</h2>
+<ul class="list">{% for p in reports %}<li><a href="{{ p.url }}">{{ p.title }}</a><small>{{ p.updated_at | date }}</small></li>{% endfor %}</ul>{% endif %}
+{% if complexes %}<h2>단지별 실거래가</h2>
+<ul class="list">{% for p in complexes %}<li><a href="{{ p.url }}">{{ p.title }}</a><small>{{ p.updated_at | date }}</small></li>{% endfor %}</ul>{% endif %}
+{% endblock %}

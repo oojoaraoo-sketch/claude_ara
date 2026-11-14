@@ -1,0 +1,144 @@
+"""DB의 글로 정적 사이트(public/)를 만든다. GitHub Pages 등 어떤 정적 호스팅에도 올릴 수 있다."""
+import json
+import shutil
+from datetime import datetime, timezone
+from email.utils import format_datetime
+from urllib.parse import urlparse
+from xml.sax.saxutils import escape
+
+import markdown
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+from . import analyze, charts
+from .config import PUBLIC_DIR, ROOT
+from .regions import get_group
+
+
+def _env():
+    env = Environment(loader=FileSystemLoader(ROOT / "templates"),
+                      autoescape=select_autoescape(["html"]))
+    env.filters["date"] = lambda iso: iso[:10]
+    return env
+
+
+def _draw_chart(conn, spec: dict, path, as_of: str) -> bool:
+    if spec["type"] == "gu_trend":
+        m = analyze.gu_monthly(conn, spec["sgg"], spec["gu"], spec["ym"], as_of)
+        if not m or len(m["trend"]) < 1:
+            return False
+        charts.gu_trend(m["trend"], f"{spec['gu']} 월별 아파트 매매 거래량·중위 거래가", path)
+    else:
+        m = analyze.complex_page(conn, spec["sgg"], spec["gu"], spec["key"], as_of)
+        if not m:
+            return False
+        charts.complex_scatter(m["points"], f"{m['facts']['apt']} 실거래가 분포", path)
+    return True
+
+
+def build(conn, cfg, out=PUBLIC_DIR) -> int:
+    site = dict(cfg["site"])
+    site["base_path"] = urlparse(site["base_url"]).path.rstrip("/")
+    gname, gslug, regions = get_group(cfg["collect"]["regions"])
+    gu_by_code = {code: {"name": n, "slug": s} for code, (n, s) in regions.items()}
+    as_of = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    if out.exists():
+        shutil.rmtree(out)
+    (out / "charts").mkdir(parents=True)
+    shutil.copytree(ROOT / "static", out / "static")
+
+    env = _env()
+    md = markdown.Markdown(extensions=["tables"])
+    rows = conn.execute("SELECT * FROM posts ORDER BY updated_at DESC").fetchall()
+    posts = []
+    for r in rows:
+        p = dict(r)
+        p["tags"] = json.loads(p["tags"])
+        p["url"] = f"{site['base_path']}/posts/{p['slug']}/"
+        p["abs_url"] = f"{site['base_url']}/posts/{p['slug']}/"
+        p["gu"] = gu_by_code.get(p["region_code"])
+        p["kind_label"] = "월간 리포트" if p["kind"] == "gu_monthly" else "단지 실거래가"
+        body = p["body_md"].replace("](/", f"]({site['base_path']}/")
+        p["html"] = md.reset().convert(body)
+        for spec in json.loads(p["charts"]):
+            _draw_chart(conn, spec, out / "charts" / f"{p['slug']}.png", as_of)
+        p["image"] = f"{site['base_url']}/charts/{p['slug']}.png"
+        posts.append(p)
+
+    def write(rel: str, html: str):
+        path = out / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(html, encoding="utf-8")
+
+    ctx = {"site": site, "regions": gu_by_code, "group_name": gname, "build_date": as_of}
+    for p in posts:
+        related = [q for q in posts if q["region_code"] == p["region_code"] and q["slug"] != p["slug"]][:6]
+        write(f"posts/{p['slug']}/index.html",
+              env.get_template("post.html").render(**ctx, post=p, related=related,
+                                                   jsonld=json.dumps(_jsonld(p, site), ensure_ascii=False)))
+
+    reports = [p for p in posts if p["kind"] == "gu_monthly"]
+    complexes = [p for p in posts if p["kind"] == "complex"]
+    write("index.html", env.get_template("index.html").render(
+        **ctx, reports=reports[:12], complexes=complexes[:24], total=len(posts)))
+    for code, gu in gu_by_code.items():
+        items = [p for p in posts if p["region_code"] == code]
+        if items:
+            write(f"region/{gu['slug']}/index.html", env.get_template("region.html").render(
+                **ctx, gu=gu, reports=[p for p in items if p["kind"] == "gu_monthly"],
+                complexes=[p for p in items if p["kind"] == "complex"]))
+    for page in ("about", "privacy"):
+        write(f"{page}/index.html", env.get_template(f"{page}.html").render(**ctx))
+    write("404.html", env.get_template("404.html").render(**ctx))
+
+    _sitemap(out, site, posts, gu_by_code)
+    _feed(out, site, posts[:30])
+    write("robots.txt", f"User-agent: *\nAllow: /\nSitemap: {site['base_url']}/sitemap.xml\n")
+    if site.get("adsense_client"):
+        pub = site["adsense_client"].replace("ca-", "")
+        write("ads.txt", f"google.com, {pub}, DIRECT, f08c47fec0942fa0\n")
+    host = urlparse(site["base_url"]).hostname or ""
+    if host and not host.endswith("github.io") and host != "example.com":
+        write("CNAME", host + "\n")
+    (out / ".nojekyll").write_text("")
+    return len(posts)
+
+
+def _jsonld(p: dict, site: dict) -> dict:
+    return {
+        "@context": "https://schema.org", "@type": "Article",
+        "headline": p["title"], "description": p["description"],
+        "datePublished": p["created_at"], "dateModified": p["updated_at"],
+        "image": [p["image"]], "mainEntityOfPage": p["abs_url"], "inLanguage": "ko",
+        "author": {"@type": "Organization", "name": site["author"]},
+        "publisher": {"@type": "Organization", "name": site["title"]},
+        "isBasedOn": "https://rt.molit.go.kr/",
+    }
+
+
+def _sitemap(out, site, posts, gu_by_code):
+    urls = [(f"{site['base_url']}/", posts[0]["updated_at"] if posts else None)]
+    urls += [(p["abs_url"], p["updated_at"]) for p in posts]
+    used = {p["region_code"] for p in posts}
+    urls += [(f"{site['base_url']}/region/{g['slug']}/", None) for c, g in gu_by_code.items() if c in used]
+    body = "\n".join(
+        f"  <url><loc>{escape(u)}</loc>" + (f"<lastmod>{m[:10]}</lastmod>" if m else "") + "</url>"
+        for u, m in urls)
+    (out / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + body + "\n</urlset>\n",
+        encoding="utf-8")
+
+
+def _feed(out, site, posts):
+    def rfc822(iso):
+        return format_datetime(datetime.fromisoformat(iso))
+    items = "\n".join(
+        f"<item><title>{escape(p['title'])}</title><link>{escape(p['abs_url'])}</link>"
+        f"<guid>{escape(p['abs_url'])}</guid><pubDate>{rfc822(p['updated_at'])}</pubDate>"
+        f"<description>{escape(p['description'])}</description></item>" for p in posts)
+    (out / "feed.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel>'
+        f"<title>{escape(site['title'])}</title><link>{escape(site['base_url'])}/</link>"
+        f"<description>{escape(site['tagline'])}</description><language>ko</language>\n"
+        + items + "\n</channel></rss>\n", encoding="utf-8")

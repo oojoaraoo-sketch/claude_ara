@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} | {{ site.title }}{% endblock %}
+{% block description %}{{ post.description }}{% endblock %}
+{% block canonical %}{{ post.abs_url }}{% endblock %}
+{% block head %}
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ post.title }}">
+<meta property="og:description" content="{{ post.description }}">
+<meta property="og:url" content="{{ post.abs_url }}">
+<meta property="og:image" content="{{ post.image }}">
+<script type="application/ld+json">{{ jsonld | safe }}</script>
+{% endblock %}
+{% block content %}
+<article class="post">
+  <p class="crumbs"><a href="{{ site.base_path }}/">홈</a>{% if post.gu %} › <a href="{{ site.base_path }}/region/{{ post.gu.slug }}/">{{ post.gu.name }}</a>{% endif %} › {{ post.kind_label }}</p>
+  <h1>{{ post.title }}</h1>
+  <p class="meta">최초 작성 {{ post.created_at | date }} · 최종 갱신 {{ post.updated_at | date }}{% if post.revision > 1 %} (데이터 반영 {{ post.revision }}차){% endif %}</p>
+  {% if site.adsense_client %}<ins class="adsbygoogle" style="display:block" data-ad-client="{{ site.adsense_client }}" data-ad-format="auto" data-full-width-responsive="true"></ins><script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>{% endif %}
+  <div class="body">{{ post.html | safe }}</div>
+  {% if post.tags %}<p class="tags">{% for t in post.tags %}<span>#{{ t }}</span>{% endfor %}</p>{% endif %}
+</article>
+{% if related %}
+<section class="related">
+  <h2>{{ post.gu.name if post.gu else '' }} 다른 글</h2>
+  <ul class="list">{% for r in related %}<li><a href="{{ r.url }}">{{ r.title }}</a><small>{{ r.kind_label }} · {{ r.updated_at | date }}</small></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

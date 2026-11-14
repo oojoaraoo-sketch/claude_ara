@@ -1,0 +1,87 @@
+name: daily-pipeline
+
+on:
+  schedule:
+    - cron: "0 21 * * *"   # 매일 06:00 KST
+  workflow_dispatch: {}      # Actions 탭에서 수동 실행
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    # 킬 스위치: 저장소 Settings > Variables 에서 PIPELINE_ENABLED=false 로 두면 전체 중단
+    if: vars.PIPELINE_ENABLED != 'false'
+    runs-on: ubuntu-latest
+    outputs:
+      pipeline_status: ${{ steps.pipeline.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Korean font for charts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-nanum
+          rm -rf ~/.cache/matplotlib
+
+      - run: pip install -r requirements.txt
+
+      - name: Tests (실패하면 발행하지 않음)
+        run: python -m unittest discover -s tests
+
+      - name: Collect → generate → build
+        id: pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+          SITE_BASE_URL: ${{ vars.SITE_BASE_URL }}
+        run: |
+          set +e
+          python -m pipeline.run all
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          echo '### 실행 결과' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat data/last_run.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save data (DB) back to repo
+        run: |
+          git config user.name "pipeline-bot"
+          git config user.email "pipeline-bot@users.noreply.github.com"
+          git add data/pipeline.db data/last_run.json
+          git diff --cached --quiet || git commit -m "data: daily update $(date -u +%F)"
+          git push
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: run
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  report:
+    # 파이프라인 일부가 실패했으면 워크플로를 실패로 표시 → GitHub가 이메일로 알림
+    needs: [run, deploy]
+    if: always() && needs.run.result != 'skipped' && needs.run.outputs.pipeline_status != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "파이프라인 오류가 있었습니다. run 작업의 Summary를 확인하세요."
+          exit 1

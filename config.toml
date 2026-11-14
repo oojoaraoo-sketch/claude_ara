@@ -1,0 +1,36 @@
+# 파이프라인 설정. 비밀값(API 키)은 여기 넣지 말고 환경변수/GitHub Secrets로 넣는다.
+#   ANTHROPIC_API_KEY  : Claude API 키
+#   DATA_GO_KR_KEY     : 공공데이터포털 "일반 인증키(Decoding)"
+
+[site]
+title = "실거래가 리포트"
+tagline = "국토교통부 공개 데이터로 매일 갱신하는 서울 아파트 실거래 분석"
+base_url = "https://example.com"   # 도메인 연결 후 변경
+language = "ko"
+author = "실거래가 리포트 편집팀"
+contact_email = ""                 # 소개/개인정보 페이지에 노출 (애드센스 심사에 필요)
+adsense_client = ""                # 예: "ca-pub-1234567890" — 승인 후 입력하면 광고 코드 자동 삽입
+google_site_verification = ""      # 서치 콘솔 인증 메타태그 값
+
+[collect]
+# 국토교통부 아파트 매매 실거래가 상세 자료
+endpoint = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
+months_back = 3           # 매일 최근 N개월을 다시 수집 (신고기한 30일이라 지난달 데이터가 계속 늘어남)
+backfill_months = 13      # 최초 실행 시(DB 비어있음) 수집할 개월 수 — 전년 동월 비교용
+regions = "seoul"         # pipeline/regions.py 의 지역 묶음 이름
+
+[generate]
+model = "claude-opus-5-5"
+effort = "medium"
+max_new_posts_per_run = 8     # 하루 생성/갱신 상한 (비용·스팸 신호 제어)
+min_trades_for_complex = 5    # 단지 페이지 생성 최소 거래 건수
+regenerate_growth = 0.15      # 거래 건수가 이 비율 이상 늘면 글을 다시 작성(갱신)
+llm_review = true             # 규칙 검사 통과 후 Claude 2차 검수 실행
+
+[quality]
+min_chars = 900               # 본문 최소 글자 수 (표 제외)
+banned_phrases = ["무조건 오", "지금 사야", "반드시 오릅", "투자 추천", "매수 추천", "확실한 수익", "폭등 예정"]
+
+[safety]
+enabled = true                # false 로 바꾸면 생성·발행 즉시 중단 (킬 스위치)
+max_consecutive_failures = 3  # 연속 실패 시 그 실행에서 생성 중단
