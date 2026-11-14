@@ -36,16 +36,21 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # Claude는 API(종량 과금)가 아니라 Claude Code CLI + 구독 토큰으로 호출
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install -g @anthropic-ai/claude-code
+
       - name: Tests (실패하면 발행하지 않음)
         run: python -m unittest discover -s tests
 
       - name: Collect → generate → build
         id: pipeline
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
           SITE_BASE_URL: ${{ vars.SITE_BASE_URL }}
-          GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}

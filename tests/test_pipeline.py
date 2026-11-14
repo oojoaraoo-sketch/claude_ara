@@ -99,6 +99,20 @@ class EndToEndTest(unittest.TestCase):
             conn.close()
 
 
+class WriterTest(unittest.TestCase):
+    def test_parse_json_fallback(self):
+        from pipeline.write import _parse_json
+        self.assertEqual(_parse_json('```json\n{"approved": true, "issues": []}\n```')["approved"], True)
+        self.assertEqual(_parse_json('검수 결과: {"approved": false, "issues": ["x"]}')["issues"], ["x"])
+
+    def test_api_key_not_passed(self):
+        import os
+        from unittest import mock
+        from pipeline.write import ClaudeWriter
+        with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "x", "CLAUDE_BIN": "claude"}):
+            self.assertNotIn("ANTHROPIC_API_KEY", ClaudeWriter("m").env)
+
+
 class ShortsTest(unittest.TestCase):
     def test_script_check_and_render(self):
         from pipeline import shorts

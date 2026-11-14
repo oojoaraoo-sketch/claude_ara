@@ -1,12 +1,9 @@
 """문장 → 음성(mp3). 공급자는 config [shorts].tts_provider 로 선택."""
 import asyncio
-import base64
-import os
 import re
 import subprocess
 
 import imageio_ffmpeg
-import requests
 
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
@@ -34,21 +31,10 @@ def _edge(text: str, voice: str, path):
     asyncio.run(go())
 
 
-def _google(text: str, voice: str, path):
-    key = os.environ.get("GOOGLE_TTS_API_KEY")
-    if not key:
-        raise TTSError("GOOGLE_TTS_API_KEY 환경변수가 없습니다.")
-    r = requests.post(
-        "https://texttospeech.googleapis.com/v1/text:synthesize",
-        params={"key": key}, timeout=60,
-        json={"input": {"text": text},
-              "voice": {"languageCode": "ko-KR", "name": voice},
-              "audioConfig": {"audioEncoding": "MP3", "speakingRate": 1.08}},
-    )
-    if r.status_code != 200:
-        raise TTSError(f"Google TTS 오류 {r.status_code}: {r.text[:200]}")
-    with open(path, "wb") as f:
-        f.write(base64.b64decode(r.json()["audioContent"]))
+def _gtts(text: str, voice: str, path):
+    from gtts import gTTS
+
+    gTTS(text, lang="ko").save(str(path))
 
 
 def _silent(text: str, voice: str, path):
@@ -57,12 +43,21 @@ def _silent(text: str, voice: str, path):
                     "anullsrc=r=24000:cl=mono", "-t", f"{secs:.2f}", "-q:a", "9", str(path)], check=True)
 
 
-PROVIDERS = {"edge": _edge, "google": _google, "silent": _silent}
+# 모두 무료. auto = edge 실패 시 gtts로 대체
+PROVIDERS = {"edge": _edge, "gtts": _gtts, "silent": _silent}
+CHAINS = {"auto": ["edge", "gtts"]}
 
 
 def speak(text: str, path, provider: str, voice: str) -> float:
-    try:
-        PROVIDERS[provider](text, voice, path)
-    except KeyError:
-        raise TTSError(f"알 수 없는 TTS 공급자: {provider}")
-    return duration(path)
+    chain = CHAINS.get(provider, [provider])
+    errors = []
+    for name in chain:
+        fn = PROVIDERS.get(name)
+        if not fn:
+            raise TTSError(f"알 수 없는 TTS 공급자: {name}")
+        try:
+            fn(text, voice, path)
+            return duration(path)
+        except Exception as e:  # noqa: BLE001 - 다음 공급자로 넘어감
+            errors.append(f"{name}: {e}")
+    raise TTSError("; ".join(errors))

@@ -1,6 +1,10 @@
 """Claude로 글 초안을 쓰고 2차 검수한다."""
 import json
 import os
+import shutil
+import subprocess
+import tempfile
+import time
 
 ARTICLE_SCHEMA = {
     "type": "object",
@@ -127,37 +131,70 @@ def _user_prompt(kind: str, facts: dict) -> str:
             + "\n\n위 규칙에 따라 글을 작성하세요.")
 
 
-class ClaudeWriter:
-    def __init__(self, model: str, effort: str = "medium"):
-        import anthropic
+def _parse_json(text: str) -> dict:
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end < 0:
+        raise WriterError("응답에서 JSON을 찾지 못했습니다.")
+    return json.loads(text[start:end + 1])
 
-        if not os.environ.get("ANTHROPIC_API_KEY"):
-            raise WriterError("ANTHROPIC_API_KEY 환경변수가 없습니다.")
-        self.client = anthropic.Anthropic(max_retries=4)
+
+class ClaudeWriter:
+    """Claude Code CLI(`claude -p`)를 호출한다.
+
+    API 종량 과금 대신 Claude 구독(Pro/Max) 한도 안에서 동작한다.
+    인증: 로컬은 로그인된 Claude Code, GitHub Actions는 `claude setup-token`으로 만든
+    CLAUDE_CODE_OAUTH_TOKEN. 종량 과금을 막기 위해 ANTHROPIC_API_KEY는 자식 프로세스에서 제거한다.
+    """
+
+    def __init__(self, model: str, effort: str = "medium", timeout: int = 900):
+        self.bin = os.environ.get("CLAUDE_BIN") or shutil.which("claude")
+        if not self.bin:
+            raise WriterError("claude CLI를 찾을 수 없습니다 (npm i -g @anthropic-ai/claude-code 또는 CLAUDE_BIN).")
         self.model = model
         self.effort = effort
-        self.usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0}
+        self.timeout = timeout
+        self.usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0, "calls": 0}
+        self.env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")}
+        self.workdir = tempfile.mkdtemp(prefix="writer-")  # 프로젝트 설정·CLAUDE.md를 읽지 않도록 빈 폴더에서 실행
 
     def _call(self, system: str, user: str, schema: dict, effort: str, max_tokens: int) -> dict:
-        resp = self.client.beta.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
-            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": user}],
-            output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
-        )
-        for k in self.usage:
-            self.usage[k] += getattr(resp.usage, k, 0) or 0
-        if resp.stop_reason == "refusal":
-            raise WriterError("모델이 요청을 거절했습니다.")
-        if resp.stop_reason == "max_tokens":
-            raise WriterError("출력이 max_tokens에서 잘렸습니다.")
-        text = next((b.text for b in resp.content if b.type == "text"), None)
-        if not text:
-            raise WriterError("응답에 텍스트가 없습니다.")
-        return json.loads(text)
+        cmd = [self.bin, "-p", "--output-format", "json", "--json-schema", json.dumps(schema),
+               "--system-prompt", system, "--tools", "", "--strict-mcp-config",
+               "--model", self.model, "--effort", effort, "--no-session-persistence"]
+        last = ""
+        for attempt in range(3):
+            try:
+                proc = subprocess.run(cmd, input=user, capture_output=True, text=True, encoding="utf-8",
+                                      timeout=self.timeout, env=self.env, cwd=self.workdir)
+            except subprocess.TimeoutExpired:
+                last = "시간 초과"
+                continue
+            try:
+                out = json.loads(proc.stdout)
+            except json.JSONDecodeError:
+                last = (proc.stderr or proc.stdout)[-500:]
+                time.sleep(20 * (attempt + 1))
+                continue
+            self.usage["calls"] += 1
+            for k in ("input_tokens", "output_tokens", "cache_read_input_tokens"):
+                self.usage[k] += (out.get("usage") or {}).get(k, 0) or 0
+            if out.get("is_error"):
+                last = str(out.get("result") or out.get("subtype"))[:500]
+                low = last.lower()
+                if "login" in low or "auth" in low or "token" in low:
+                    raise WriterError(f"Claude 인증 실패(CLAUDE_CODE_OAUTH_TOKEN 확인): {last}")
+                if "limit" in low:  # 구독 사용 한도 도달 → 재시도해도 소용없음, 다음 날 이어서 진행
+                    raise WriterError(f"Claude 구독 사용 한도: {last}")
+                time.sleep(20 * (attempt + 1))
+                continue
+            data = out.get("structured_output")
+            if isinstance(data, dict):
+                return data
+            return _parse_json(out.get("result") or "")
+        raise WriterError(f"claude CLI 호출 실패: {last}")
 
     def write(self, kind: str, facts: dict, feedback: list[str] | None = None) -> dict:
         user = _user_prompt(kind, facts)

@@ -144,7 +144,7 @@ def main(argv=None):
     ap.add_argument("command", choices=["collect", "generate", "build", "shorts", "all"])
     ap.add_argument("--demo", action="store_true", help="가상 데이터 + 가짜 작성기 (별도 DB 사용)")
     ap.add_argument("--fake-writer", action="store_true", help="Claude 대신 가짜 작성기")
-    ap.add_argument("--tts", choices=["edge", "google", "silent"], help="TTS 공급자 덮어쓰기")
+    ap.add_argument("--tts", choices=["auto", "edge", "gtts", "silent"], help="TTS 공급자 덮어쓰기")
     args = ap.parse_args(argv)
 
     cfg = load_config()
