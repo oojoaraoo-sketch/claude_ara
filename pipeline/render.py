@@ -151,7 +151,7 @@ def segment(image: Path, audio: Path, seconds: float, out: Path) -> None:
     subprocess.run([
         FFMPEG, "-y", "-loglevel", "error",
         "-loop", "1", "-framerate", "30", "-i", str(image), "-i", str(audio),
-        "-filter_complex", "[0:v]fade=t=in:st=0:d=0.25,format=yuv420p[v];[1:a]apad,aresample=44100[a]",
+        "-filter_complex", "[0:v]format=yuv420p[v];[1:a]apad,aresample=44100[a]",
         "-map", "[v]", "-map", "[a]", "-t", f"{seconds:.2f}",
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-r", "30",
         "-c:a", "aac", "-b:a", "128k", "-ac", "2", str(out),

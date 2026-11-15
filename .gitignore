@@ -6,3 +6,5 @@ videos/
 data/demo.db
 .env
 client_secret*.json
+
+tiktok_upload/
