@@ -82,6 +82,7 @@ def gu_monthly(conn, sgg_cd: str, gu_name: str, ym: str, as_of: str) -> dict | N
         ).fetchone()[0]
         if prior and r["price"] > prior:
             highs += 1
+    since = conn.execute("SELECT MIN(deal_ym) FROM trades WHERE sgg_cd = ?", (sgg_cd,)).fetchone()[0]
 
     facts = {
         "region": gu_name,
@@ -106,6 +107,7 @@ def gu_monthly(conn, sgg_cd: str, gu_name: str, ym: str, as_of: str) -> dict | N
         "top_umd_count": f"{umd[1]:,}건",
         "small_share": f"{small:.1f}%",
         "new_high_count": f"{highs:,}건",
+        "high_since": ym_label(since) if since else "수집 시작",
     }
     for i, (name, cnt) in enumerate(by_complex, 1):
         facts[f"busy{i}_apt"] = name

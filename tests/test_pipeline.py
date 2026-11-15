@@ -63,6 +63,14 @@ class QATest(unittest.TestCase):
                       self.facts, self.cfg)
         self.assertEqual(ok, [])
 
+    def test_price_shrink_and_all_time_rejected(self):
+        p = qa.check("gu_monthly", self.draft("거래량과 중위가가 모두 줄었습니다."), self.facts, self.cfg)
+        self.assertTrue(any("표현 오류" in x for x in p))
+        p = qa.check("gu_monthly", self.draft("역대 최고가 거래가 나왔습니다."), self.facts, self.cfg)
+        self.assertTrue(any("근거 없는 표현" in x for x in p))
+        ok = qa.check("gu_monthly", self.draft("거래량은 줄고 중위가는 내렸습니다."), self.facts, self.cfg)
+        self.assertEqual(ok, [])
+
     def test_raw_number_rejected(self):
         p = qa.check("gu_monthly", self.draft("거래는 135건으로 늘었습니다."), self.facts, self.cfg)
         self.assertTrue(any("135" in x for x in p))

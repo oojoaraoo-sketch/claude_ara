@@ -13,6 +13,10 @@ AREA_MISLABEL = re.compile(r"나머지[^.\n]{0,15}(?:중대형|중형 이상)"
                            r"|(?:중대형|중형 이상)[^.\n]{0,15}(?:더 많았|절반(?:이|을) 넘|많았다는 뜻)")
 # 숫자를 한글로 풀어 쓴 면적 표기 (예: '육십 제곱미터')
 KOREAN_NUMBER = re.compile(r"(?:육십|삼십|팔십오?)\s?(?:제곱미터|㎡)")
+# 가격에 '줄었다'를 쓰는 표현 (예: '거래량과 중위가가 모두 줄었다') → 가격은 '내렸다/낮아졌다'
+PRICE_SHRINK = re.compile(r"(?:중위\s?가(?:격)?|가격)[^.\n]{0,30}(?:모두|함께|둘 다)\s?(?:전월보다\s?)?줄")
+# 수집 기간(high_since) 안의 비교일 뿐이라 '역대·사상 최고'는 근거 없음
+ALL_TIME = re.compile(r"역대\s?최고|사상\s?최고")
 
 REQUIRED_MARKERS = {
     "gu_monthly": {"CHART", "TABLE:top10"},
@@ -67,6 +71,10 @@ def check(kind: str, draft: dict, facts: dict, cfg: dict) -> list[str]:
         problems.append(f"면적 해석 오류: '{mt.group()}' → 소형의 나머지는 '전용 60㎡ 초과'로 쓰세요 (중대형 아님)")
     for mt in KOREAN_NUMBER.finditer(all_text):
         problems.append(f"숫자 표기: '{mt.group()}' → 아라비아 숫자로 쓰세요 (예: 60㎡)")
+    for mt in PRICE_SHRINK.finditer(all_text):
+        problems.append(f"표현 오류: '{mt.group()}' → 가격은 '내렸다/낮아졌다', '줄었다'는 거래량에만")
+    for mt in ALL_TIME.finditer(all_text):
+        problems.append(f"근거 없는 표현: '{mt.group()}' → 신고가는 {{{{high_since}}}} 이후 기록 기준일 뿐입니다")
     for phrase in cfg["quality"]["banned_phrases"]:
         if phrase in all_text:
             problems.append(f"금지 표현 포함: '{phrase}'")
@@ -144,7 +152,9 @@ def render(draft: dict, facts: dict, tables: dict, chart_url: str, chart_alt: st
         "\n\n---\n\n"
         f"*자료: 국토교통부 실거래가 공개시스템(공공데이터포털 API), {facts['as_of']} 수집 기준. "
         "해제(취소)된 거래는 제외했으며, 신고 기한(계약 후 30일) 내 추가 신고로 수치가 바뀔 수 있습니다. "
-        "이 글은 공개 데이터를 정리한 정보이며 투자 권유가 아닙니다.*"
+        + (f"신고가(기존 최고가를 넘어선 거래)는 {facts['high_since']} 이후 수집된 거래와 비교한 값입니다. "
+           if facts.get("high_since") else "")
+        + "이 글은 공개 데이터를 정리한 정보이며 투자 권유가 아닙니다.*"
     )
     return {
         "title": fill(draft["title"], facts),
