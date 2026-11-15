@@ -8,6 +8,11 @@ DIGITS = re.compile(r"\d+(?:[.,]\d+)*")
 ALWAYS_OK = {"3.3", "60", "30"}
 # 데이터 값이 아닌 숫자: 마크다운 번호 목록("1. "), 표 순위("1위"~"10위")
 NON_DATA = re.compile(r"(?m)^\s*\d{1,2}[.)]\s|(?<!\d)(?:10|[1-9])(?=위)")
+# 소형(60㎡ 이하)의 나머지 전체를 '중대형'으로 부르는 해석 오류 (60~85㎡는 중소형)
+AREA_MISLABEL = re.compile(r"나머지[^.\n]{0,15}(?:중대형|중형 이상)"
+                           r"|(?:중대형|중형 이상)[^.\n]{0,15}(?:더 많았|절반(?:이|을) 넘|많았다는 뜻)")
+# 숫자를 한글로 풀어 쓴 면적 표기 (예: '육십 제곱미터')
+KOREAN_NUMBER = re.compile(r"(?:육십|삼십|팔십오?)\s?(?:제곱미터|㎡)")
 
 REQUIRED_MARKERS = {
     "gu_monthly": {"CHART", "TABLE:top10"},
@@ -58,6 +63,10 @@ def check(kind: str, draft: dict, facts: dict, cfg: dict) -> list[str]:
         problems.append("body: 소제목(##) 3개 미만")
 
     all_text = " ".join(texts.values())
+    for mt in AREA_MISLABEL.finditer(all_text):
+        problems.append(f"면적 해석 오류: '{mt.group()}' → 소형의 나머지는 '전용 60㎡ 초과'로 쓰세요 (중대형 아님)")
+    for mt in KOREAN_NUMBER.finditer(all_text):
+        problems.append(f"숫자 표기: '{mt.group()}' → 아라비아 숫자로 쓰세요 (예: 60㎡)")
     for phrase in cfg["quality"]["banned_phrases"]:
         if phrase in all_text:
             problems.append(f"금지 표현 포함: '{phrase}'")

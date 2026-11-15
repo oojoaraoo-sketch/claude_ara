@@ -54,6 +54,15 @@ class QATest(unittest.TestCase):
     def test_clean_passes(self):
         self.assertEqual(qa.check("gu_monthly", self.draft("거래는 {{trade_count}}입니다."), self.facts, self.cfg), [])
 
+    def test_area_mislabel_and_korean_number_rejected(self):
+        p = qa.check("gu_monthly", self.draft("소형 비중이 낮아 중대형 거래가 더 많았다는 뜻입니다."), self.facts, self.cfg)
+        self.assertTrue(any("면적 해석" in x for x in p))
+        p = qa.check("gu_monthly", self.draft("전용 육십 제곱미터 이하 거래입니다."), self.facts, self.cfg)
+        self.assertTrue(any("숫자 표기" in x for x in p))
+        ok = qa.check("gu_monthly", self.draft("전용 60㎡를 넘는 거래가 더 많았습니다. 중대형 거래가 많은 달에는 중위가가 오릅니다."),
+                      self.facts, self.cfg)
+        self.assertEqual(ok, [])
+
     def test_raw_number_rejected(self):
         p = qa.check("gu_monthly", self.draft("거래는 135건으로 늘었습니다."), self.facts, self.cfg)
         self.assertTrue(any("135" in x for x in p))
