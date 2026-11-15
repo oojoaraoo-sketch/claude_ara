@@ -217,10 +217,12 @@ class ClaudeWriter:
                      + "\n- ".join(feedback))
         return self._call(SYSTEM, user, ARTICLE_SCHEMA, self.effort, 16000)
 
-    def write_shorts(self, facts: dict, feedback: list[str] | None = None) -> dict:
+    def write_shorts(self, facts: dict, feedback: list[str] | None = None, guidance: str = "") -> dict:
         user = ("사용 가능한 facts (플레이스홀더 = 현재 값):\n"
                 + "\n".join(f"- {{{{{k}}}}} = {v}" for k, v in facts.items())
                 + "\n\n규칙에 따라 숏폼 대본을 작성하세요.")
+        if guidance:
+            user += "\n\n이번 영상의 추가 지침:\n" + guidance
         if feedback:
             user += "\n\n이전 대본이 아래 이유로 반려되었습니다. 모두 고치세요:\n- " + "\n- ".join(feedback)
         return self._call(SHORTS_SYSTEM, user, SHORTS_SCHEMA, self.effort, 8000)
@@ -279,7 +281,7 @@ class FakeWriter:
                      "answer": "국토교통부 실거래가 공개 자료이며 {{as_of}} 기준입니다."}] * 3,
         }
 
-    def write_shorts(self, facts: dict, feedback: list[str] | None = None) -> dict:
+    def write_shorts(self, facts: dict, feedback: list[str] | None = None, guidance: str = "") -> dict:
         s = lambda h, n: {"headline": h, "narration": n}  # noqa: E731
         return {
             "title": "{{month}} {{region}} 아파트 거래 {{trade_count}}, 최고가는?",

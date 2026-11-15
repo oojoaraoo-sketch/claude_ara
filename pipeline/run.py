@@ -208,13 +208,32 @@ def do_instagram(conn, cfg, summary):
             (v["slug"], status, mid, err, db.now_iso()))
         conn.commit()
     summary["instagram"] = {"posted": posted, "failed": failed}
+    try:
+        from . import metrics
+        metrics.collect_instagram(conn)
+    except Exception as e:
+        log(f"Instagram 성과 수집 건너뜀: {e}")
     if failed and not posted:
         raise RuntimeError(f"Instagram 게시 {len(failed)}건 모두 실패")
 
 
+def do_learn(conn, cfg, summary):
+    """성과 수집 → 가중치·교훈 갱신. 실패해도 발행은 계속한다 (오류로 세지 않음)."""
+    from . import learn, metrics
+    from .write import ClaudeWriter
+    try:
+        got = {"youtube": metrics.collect_youtube(conn), "tiktok": metrics.collect_tiktok(conn)}
+        res = learn.update(conn, lambda: ClaudeWriter(cfg["generate"]["model"], cfg["generate"]["effort"]))
+        summary["learn"] = {"collected": got, **res}
+        log(f"성과 학습: 수집 {got}, 평가 대상 {res['scored']}편")
+    except Exception as e:
+        summary["learn"] = {"error": f"{type(e).__name__}: {e}"[:300]}
+        log(f"성과 학습 건너뜀: {e}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("command", choices=["collect", "generate", "build", "shorts", "all", "instagram"])
+    ap.add_argument("command", choices=["collect", "generate", "build", "shorts", "all", "instagram", "learn"])
     ap.add_argument("--demo", action="store_true", help="가상 데이터 + 가짜 작성기 (별도 DB 사용)")
     ap.add_argument("--fake-writer", action="store_true", help="Claude 대신 가짜 작성기")
     ap.add_argument("--tts", choices=["auto", "edge", "gtts", "silent"], help="TTS 공급자 덮어쓰기")
@@ -242,6 +261,8 @@ def main(argv=None):
         stage("collect", lambda: do_collect(conn, cfg, summary, demo=args.demo))
     if args.command in ("generate", "all"):
         stage("generate", lambda: do_generate(conn, cfg, summary, fake=args.demo or args.fake_writer))
+    if args.command in ("learn", "all") and not args.demo:
+        do_learn(conn, cfg, summary)   # 새 영상을 만들기 전에 지난 성과를 반영
     if args.command in ("shorts", "all"):
         stage("shorts", lambda: do_shorts(conn, cfg, summary, fake=args.demo or args.fake_writer,
                                           tts_override=args.tts))

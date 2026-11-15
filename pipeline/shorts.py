@@ -3,7 +3,7 @@ import json
 import shutil
 from pathlib import Path
 
-from . import analyze, charts, db, qa, render, tts
+from . import analyze, assets, db, learn, motion, qa, render, tts
 from .config import ROOT
 from .write import SHORTS_SCENES
 
@@ -60,9 +60,11 @@ def produce(conn, cfg, writer, post, out_dir: Path = VIDEO_DIR) -> tuple[bool, l
     work = out_dir / f"_{post['slug']}"
     work.mkdir(parents=True, exist_ok=True)
     try:
+        playbook = learn.load()
+        variant = learn.choose(playbook, post["slug"])
         script, problems, feedback = None, [], None
         for _ in range(2):
-            script = writer.write_shorts(facts, feedback)
+            script = writer.write_shorts(facts, feedback, learn.guidance(playbook, variant))
             problems = check_script(script, facts, cfg)
             if not problems:
                 break
@@ -71,34 +73,49 @@ def produce(conn, cfg, writer, post, out_dir: Path = VIDEO_DIR) -> tuple[bool, l
             db.log_rejection(conn, "video:" + post["slug"], problems)
             return False, problems
 
-        chart = work / "chart.png"
         m = analyze.gu_monthly(conn, spec["sgg"], spec["gu"], spec["ym"], facts["as_of"])
-        if m:
-            charts.gu_trend(m["trend"], f"{spec['gu']} 월별 거래량·중위가", chart, figsize=(9, 5.6))
+        trend = m["trend"] if m else []
 
         s = cfg["shorts"]
         site = cfg["site"]
-        segments, total = [], 0.0
+        # 1) 음성을 먼저 만들어 장면 길이를 정한다
+        parts, total = [], 0.0
         for i, k in enumerate(SHORTS_SCENES):
             sc = script["scenes"][k]
             narration = qa.fill(sc["narration"], facts)
             audio = work / f"{i}.mp3"
             secs = tts.speak(narration, audio, s["tts_provider"], s["voice"]) + 0.35
+            parts.append((k, qa.fill(sc["headline"], facts), narration, audio, secs))
             total += secs
-            img = work / f"{i}.png"
-            render.scene_image(k, qa.fill(sc["headline"], facts), narration, facts,
-                               site["title"], site["base_url"], chart, img)
-            seg = work / f"{i}.mp4"
-            render.segment(img, audio, secs, seg)
-            segments.append(seg)
         if total > s["max_seconds"]:
             problems = [f"영상 길이 {total:.1f}초 > {s['max_seconds']}초"]
             db.log_rejection(conn, "video:" + post["slug"], problems)
             return False, problems
 
+        # 2) 공개 사진 배경 (실험 변수 photo=on 이고 조건에 맞는 사진이 있을 때만)
+        theme = motion.THEMES[variant["theme"]]
+        photo, credit_short, credit_full = None, None, None
+        if variant["photo"] == "on" and s.get("public_photos", True):
+            path, credit_short, credit_full = assets.region_photo(conn, writer, facts["region"], work)
+            photo = motion.load_photo(path, theme)
+        variant["photo"] = "on" if photo is not None else "off"   # 실제로 쓴 값으로 기록
+
+        # 3) 장면별 모션 렌더
+        segments, offset = [], 0.0
+        for i, (k, headline, narration, audio, secs) in enumerate(parts):
+            scene = motion.Scene(k, headline, narration, facts, trend, theme, site["title"], site["base_url"], secs,
+                                 photo_bg=photo if k in ("hook", "outro") else None,
+                                 credit=credit_short if (photo is not None and k == "hook") else None,
+                                 intro=i > 0)
+            if i == 0:
+                scene.frame(secs - 0.1, 0.0).save(out_dir / f"{post['slug']}.jpg", quality=90)  # 썸네일 후보
+            seg = work / f"{i}.mp4"
+            motion.render_scene(scene, audio, seg, offset, total)
+            segments.append(seg)
+            offset += secs
+
         out = out_dir / f"{post['slug']}.mp4"
         render.concat(segments, out)
-        shutil.copy(work / "0.png", out_dir / f"{post['slug']}.jpg")  # 썸네일 후보
 
         post_url = f"{site['base_url']}/posts/{post['slug']}/"
         tags = [qa.fill(t, facts).lstrip("#") for t in script["hashtags"]][:5]
@@ -106,12 +123,14 @@ def produce(conn, cfg, writer, post, out_dir: Path = VIDEO_DIR) -> tuple[bool, l
         desc = (qa.fill(script["description"], facts)
                 + f"\n\n단지별 상세 표: {post_url}"
                 + "\n자료: 국토교통부 실거래가 공개시스템. 정보 제공 목적이며 투자 권유가 아닙니다."
+                + (f"\n{credit_full}" if photo is not None and credit_full else "")
                 + "\n\n" + " ".join("#" + t.replace(" ", "") for t in tags))
         ts = db.now_iso()
         conn.execute(
             """INSERT OR REPLACE INTO videos (slug, title, description, tags, seconds, status,
-                   created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'rendered', ?, ?)""",
-            (post["slug"], title, desc, json.dumps(tags, ensure_ascii=False), round(total, 1), ts, ts))
+                   created_at, updated_at, variant) VALUES (?, ?, ?, ?, ?, 'rendered', ?, ?, ?)""",
+            (post["slug"], title, desc, json.dumps(tags, ensure_ascii=False), round(total, 1), ts, ts,
+             json.dumps(variant, ensure_ascii=False)))
         conn.commit()
         return True, []
     finally:

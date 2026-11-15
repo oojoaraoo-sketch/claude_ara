@@ -92,6 +92,8 @@ def connect(path: Path | str = DB_PATH) -> sqlite3.Connection:
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    if "variant" not in {r[1] for r in conn.execute("PRAGMA table_info(videos)")}:
+        conn.execute("ALTER TABLE videos ADD COLUMN variant TEXT")   # 실험 변수(JSON): 테마·도입부·사진
     return conn
 
 

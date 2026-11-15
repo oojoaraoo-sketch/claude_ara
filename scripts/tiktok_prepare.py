@@ -43,6 +43,31 @@ def main():
         (OUT / f"{sys.argv[2]}.mp4").unlink(missing_ok=True)
         print("기록 완료:", sys.argv[2])
         return
+    if len(sys.argv) >= 2 and sys.argv[1] == "--list":
+        # 올린 영상의 slug 와 제목 (TikTok 화면의 영상과 짝짓기용)
+        conn = sqlite3.connect(ROOT / "data" / "pipeline.db")
+        for slug in posted:
+            row = conn.execute("SELECT title FROM videos WHERE slug = ?", (slug,)).fetchone()
+            print(slug, "|", row[0] if row else "")
+        return
+    if len(sys.argv) >= 3 and sys.argv[1] == "--metrics":
+        # 사용: --metrics slug=조회수[,좋아요[,댓글]] ...  → data/tiktok_metrics.json 에 날짜별로 쌓고 저장소에 올림
+        path = ROOT / "data" / "tiktok_metrics.json"
+        subprocess.run(["git", "-C", str(ROOT), "pull", "-q", "--rebase", "--autostash"], check=False)
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        for pair in sys.argv[2:]:
+            slug, vals = pair.split("=", 1)
+            nums = [int(x) for x in vals.split(",")] + [None, None]
+            data.setdefault(slug, {})[day] = {"views": nums[0], "likes": nums[1], "comments": nums[2]}
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+        git = ["git", "-C", str(ROOT), "-c", "user.name=pipeline-bot",
+               "-c", "user.email=pipeline-bot@users.noreply.github.com"]
+        subprocess.run(git + ["add", "data/tiktok_metrics.json"], check=False)
+        subprocess.run(git + ["commit", "-q", "-m", f"data: tiktok metrics {day}"], check=False)
+        subprocess.run(["git", "-C", str(ROOT), "push", "-q", "origin", "main"], check=False)
+        print("성과 기록 완료:", len(sys.argv) - 2, "편")
+        return
 
     subprocess.run(["git", "-C", str(ROOT), "pull", "-q", "--rebase", "--autostash"], check=False)
     conn = sqlite3.connect(ROOT / "data" / "pipeline.db")
