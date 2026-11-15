@@ -8,7 +8,10 @@
 """
 import argparse
 import json
+import os
+import re
 import sys
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 
 from . import collect, db, generate, site
@@ -20,6 +23,22 @@ KST = timezone(timedelta(hours=9))
 
 def log(msg: str):
     print(f"[{datetime.now(KST):%H:%M:%S}] {msg}", flush=True)
+
+
+SECRET_ENVS = ("DATA_GO_KR_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY",
+               "YT_CLIENT_SECRET", "YT_REFRESH_TOKEN", "YT_CLIENT_ID")
+
+
+def redact(summary: dict) -> dict:
+    """공개 저장소에 커밋되는 요약에서 비밀값·키가 든 URL 파라미터를 지운다."""
+    text = json.dumps(summary, ensure_ascii=False)
+    for name in SECRET_ENVS:
+        val = os.environ.get(name)
+        if val and len(val) >= 8:
+            text = text.replace(val, "***")
+            text = text.replace(urllib.parse.quote(val, safe=""), "***")
+    text = re.sub(r"(?i)(serviceKey|key|token|secret)=[^&\s\"']+", r"\1=***", text)
+    return json.loads(text)
 
 
 def do_collect(conn, cfg, summary, demo=False):
@@ -176,6 +195,7 @@ def main(argv=None):
         stage("build", build)  # 업로드된 영상 ID를 글에 넣기 위해 숏폼 다음에 빌드
 
     status = "error" if summary["errors"] else "ok"
+    summary = redact(summary)
     db.finish_run(conn, run_id, status, summary)
     if not args.demo:
         (DATA_DIR / "last_run.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2),

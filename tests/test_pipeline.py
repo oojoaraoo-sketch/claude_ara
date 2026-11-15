@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from datetime import date
@@ -97,6 +98,28 @@ class EndToEndTest(unittest.TestCase):
             html = (out / "posts" / jobs[0]["slug"] / "index.html").read_text(encoding="utf-8")
             self.assertNotIn("{{", html)
             conn.close()
+
+
+class RedactTest(unittest.TestCase):
+    def test_secrets_removed(self):
+        import os
+        from unittest import mock
+        from pipeline.run import redact
+        s = {"errors": ["403 for url: https://x/?serviceKey=abc123SECRETxyz&LAWD_CD=1", "tok sk-ant-oat01-ZZZZZZZZ"]}
+        with mock.patch.dict(os.environ, {"CLAUDE_CODE_OAUTH_TOKEN": "sk-ant-oat01-ZZZZZZZZ"}):
+            out = json.dumps(redact(s))
+        self.assertNotIn("abc123SECRETxyz", out)
+        self.assertNotIn("ZZZZZZZZ", out)
+        self.assertIn("LAWD_CD=1", out)
+
+    def test_403_message_has_no_url(self):
+        from unittest import mock
+        resp = mock.Mock(status_code=403, text="Forbidden")
+        sess = mock.Mock(get=mock.Mock(return_value=resp))
+        with self.assertRaises(collect.CollectError) as cm:
+            collect.fetch_month("https://x", "11110", "202610", api_key="SECRETKEY123", session=sess)
+        self.assertNotIn("SECRETKEY123", str(cm.exception))
+        self.assertIn("인증", str(cm.exception))
 
 
 class WriterTest(unittest.TestCase):

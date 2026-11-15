@@ -100,14 +100,21 @@ def fetch_month(endpoint: str, sgg_cd: str, ym: str, api_key: str | None = None,
         params = {"serviceKey": api_key, "LAWD_CD": sgg_cd, "DEAL_YMD": ym,
                   "pageNo": page, "numOfRows": per}
         for attempt in range(3):
+            # 예외 메시지에는 키가 포함된 URL이 들어가므로 절대 그대로 내보내지 않는다
             try:
                 resp = s.get(endpoint, params=params, timeout=30)
-                resp.raise_for_status()
-                break
-            except requests.RequestException:
+            except requests.RequestException as e:
                 if attempt == 2:
-                    raise
+                    raise CollectError(f"네트워크 오류: {type(e).__name__}") from None
                 time.sleep(2 ** attempt)
+                continue
+            if resp.status_code in (401, 403):
+                raise CollectError(f"인증 실패 HTTP {resp.status_code}: {resp.text[:120]!r}")
+            if resp.status_code == 200:
+                break
+            if attempt == 2:
+                raise CollectError(f"HTTP {resp.status_code}")
+            time.sleep(2 ** attempt)
         batch, total = parse_items(resp.text, sgg_cd)
         rows.extend(batch)
         if page * per >= total or not batch:
