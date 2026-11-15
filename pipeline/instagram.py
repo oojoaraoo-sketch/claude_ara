@@ -29,8 +29,8 @@ class InstagramError(RuntimeError):
 
 def _business_mode() -> bool:
     """시스템 사용자(페이스북 그래프) 토큰이면 True. Instagram 로그인 토큰은 'IG'로 시작한다."""
-    tok = os.environ.get("IG_ACCESS_TOKEN", "")
-    return bool(tok) and not tok.startswith("IG") and bool(os.environ.get("IG_USER_ID"))
+    tok = os.environ.get("IG_ACCESS_TOKEN", "").strip()
+    return bool(tok) and not tok.startswith("IG") and bool(os.environ.get("IG_USER_ID", "").strip())
 
 
 def configured() -> bool:
@@ -85,7 +85,8 @@ def token() -> str:
 
 def publish_reel(video_url: str, caption: str, wait_seconds: int = 600) -> str:
     if _business_mode():
-        graph, tok, ig_id = FB_GRAPH, os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
+        # Windows에서 등록한 비밀값에는 끝에 \r\n 이 붙을 수 있음
+        graph, tok, ig_id = FB_GRAPH, os.environ["IG_ACCESS_TOKEN"].strip(), os.environ["IG_USER_ID"].strip()
     else:
         graph, tok = GRAPH, token()
         me = requests.get(f"{GRAPH}/me", params={"fields": "user_id,username", "access_token": tok}, timeout=30)

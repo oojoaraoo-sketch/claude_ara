@@ -82,6 +82,7 @@ class QATest(unittest.TestCase):
                          "404건이었습니다 404건과 6억 7,000만원으로 상계동과 6층으로 15건이")
         self.assertEqual(qa.fill("{{f}}이 {{f}}은 {{g}}로 {{h}}으로 {{f}}이번", f),
                          "노원구가 노원구는 3.2%로 서울로 노원구이번")
+        self.assertEqual(qa.fill("{{c}}와는 {{f}}과도", f), "상계동과는 노원구와도")
 
     def test_render_fills(self):
         out = qa.render(self.draft("거래 {{trade_count}}"), self.facts, {"top10": "|a|"}, "/c.png", "alt")
