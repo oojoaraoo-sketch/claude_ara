@@ -42,7 +42,7 @@ max_narration_chars = 90      # 장면당 내레이션 최대 글자 수(숫자 
 
 [youtube]
 upload = true                 # YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN 이 있을 때만 실제 업로드
-privacy = "public"            # API 감사 전 프로젝트는 YouTube가 강제로 비공개 처리함
+privacy = "public"            # 2026-11-02부터 감사 없이도 공개 업로드 가능
 category_id = "27"            # 27=교육 (22=인물/블로그, 25=뉴스/정치)
 
 [safety]

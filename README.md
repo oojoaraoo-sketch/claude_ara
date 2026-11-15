@@ -79,9 +79,8 @@ Claude가 장면별 대본을 쓰되 블로그와 같은 플레이스홀더 규�
    ```
    브라우저에서 채널 계정으로 로그인 → 출력되는 리프레시 토큰 복사.
 5. GitHub Secrets에 `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` 저장.
-6. **중요**: 감사(audit)를 받지 않은 API 프로젝트로 올린 영상은 YouTube가 강제로 **비공개**로 잠급니다.
-   공개 업로드를 하려면 YouTube API 감사 신청 양식(YouTube API Services - Audit and Quota Extension Form)을 제출해야 합니다.
-   승인 전까지는 영상이 비공개로 쌓이며, 승인 후 YouTube Studio에서 공개로 바꿀 수 있습니다.
+6. 감사(audit)는 필요 없습니다. 2026-11-02 YouTube Data API 정책 변경으로 미검증 프로젝트의 업로드도 공개 게시가 가능합니다
+   (그 전에는 비공개로 잠겼음). 기본 할당량(하루 10,000 단위 ≈ 업로드 6편)을 넘길 때만 할당량 증설 신청이 필요합니다.
 
 YouTube 키가 없으면 영상은 업로드되지 않고 Actions 실행 화면의 Artifacts(`shorts-번호`)로 30일간 보관됩니다.
 
