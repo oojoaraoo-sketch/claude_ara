@@ -190,6 +190,12 @@ class InstagramBusinessTest(unittest.TestCase):
         self.assertTrue(all(u.startswith("https://graph.facebook.com/") for u in calls))
         self.assertIn("https://graph.facebook.com/1784/media", calls)
 
+    def test_token_bom_and_newline_are_removed(self):
+        from pipeline import instagram
+        self.assertEqual(instagram._clean("﻿EAAxx\r\n"), "EAAxx")
+        self.assertEqual(instagram._clean(' "EAAxx" '), "EAAxx")
+        self.assertNotIn("EAAxx", instagram._shape("EAAxx"))
+
 
 class WriterTest(unittest.TestCase):
     def test_parse_json_fallback(self):
@@ -240,3 +246,38 @@ class ShortsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Timelapse3DTest(unittest.TestCase):
+    def test_facts_and_frame(self):
+        import statistics
+        from pipeline import timelapse3d as tl
+        from pipeline.analyze import PYEONG, won
+        from pipeline.regions import SEOUL
+        self.assertEqual(set(tl.TILES), {gu for gu, _ in SEOUL.values()})          # 25개 구 모두 배치
+        self.assertEqual(len(set(tl.TILES.values())), 25)                           # 칸 중복 없음
+        self.assertEqual(tl.default_end(date(2026, 11, 15)), "202609")              # 신고 기한 안 끝난 달 제외
+        today = date(2026, 11, 14)
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = db.connect(Path(tmp) / "t.db")
+            db.upsert_trades(conn, make_trades(["11680", "11650"], today=today))
+            data = tl.seoul_facts(conn, "202610", 6)
+            self.assertEqual(len(data["months"]), 6)
+            rows = conn.execute("SELECT price, area FROM trades WHERE canceled = 0 AND sgg_cd = '11680' "
+                                "AND deal_ym = '202610'").fetchall()
+            expect = statistics.median(r["price"] / (r["area"] / PYEONG) for r in rows)
+            self.assertAlmostEqual(data["values"]["202610"]["강남구"], expect)
+            self.assertIn(data["facts"]["top1_ppp"], {won(v) for v in data["values"]["202610"].values()})
+            frame = tl.Timelapse(data).frame(3.0)
+            self.assertEqual(frame.size, (1080, 1920))
+            conn.close()
+
+    def test_geometry(self):
+        from pipeline import timelapse3d as tl
+        hull = tl._hull([(0, 0), (2, 0), (2, 2), (0, 2), (1, 1)])
+        self.assertEqual(len(hull), 4)
+        self.assertTrue(tl._inside((1, 1), hull))
+        self.assertFalse(tl._inside((3, 1), hull))
+        near = tl.project(0, 1, 0, 0.0, 1, 0, 0)[2]
+        far = tl.project(0, -1, 0, 0.0, 1, 0, 0)[2]
+        self.assertGreater(near, far)                                               # 남쪽(아래)이 앞
