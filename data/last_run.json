@@ -5,31 +5,31 @@
   "collected_new": 0,
   "collect_errors": [],
   "published": [
-    "seoul-seongbuk-2026-10",
-    "seoul-jungnang-2026-10",
-    "seoul-geumcheon-2026-10",
-    "seoul-seongdong-2026-10",
-    "seoul-gwangjin-2026-10",
-    "seoul-jung-2026-10",
-    "seoul-yongsan-2026-10"
+    "seoul-seocho-2026-10",
+    "seoul-jongno-2026-10",
+    "seoul-nowon-2026-09",
+    "seoul-gangseo-2026-09",
+    "seoul-guro-2026-09",
+    "seoul-eunpyeong-2026-09",
+    "seoul-seongbuk-2026-09"
   ],
   "rejected": [
     {
-      "slug": "seoul-seocho-2026-10",
+      "slug": "seoul-dobong-2026-09",
       "problems": [
-        "2차 검수: '소형 면적대(전용 60㎡ 이하) 비중은 38.6%였습니다. 중대형 거래가 더 많았다는 뜻' — 나머지 61.4%는 전용 60㎡ 초과 전체이며, 통상 60~85㎡는 중소형, 85㎡ 초과가 중대형으로 분류되므로 '중대형 거래가 더 많았다'는 사실과 다르고 facts로 뒷받침되지 않음. '전용 60㎡를 넘는 거래가 61.4%로 더 많았다' 등으로 수정 필요."
+        "2차 검수: 조사 오류: '창동주공3단지(해등마을)이 14건으로'에서 조사는 괄호 앞말 '단지'(받침 없음)에 맞춰 '창동주공3단지(해등마을)가'로 써야 합니다."
       ]
     }
   ],
   "usage": {
-    "input_tokens": 6,
-    "output_tokens": 2732,
-    "cache_read_input_tokens": 3256,
-    "calls": 3
+    "input_tokens": 4,
+    "output_tokens": 2750,
+    "cache_read_input_tokens": 1628,
+    "calls": 2
   },
   "learn": {
     "collected": {
-      "youtube": 8,
+      "youtube": 10,
       "tiktok": 0
     },
     "scored": 0,
@@ -47,7 +47,8 @@
       },
       "photo": {
         "on": 1.0,
-        "off": 1.0
+        "off": 1.0,
+        "clip": 1.0
       }
     },
     "samples": {
@@ -59,14 +60,11 @@
   },
   "shorts": {
     "made": [
-      "seoul-seongbuk-2026-10",
-      "seoul-jungnang-2026-10"
+      "seoul-gangnam-2026-10",
+      "seoul-yeongdeungpo-2026-10"
     ],
     "failed": [],
-    "uploaded": [
-      "8Ia1cx8YnXo",
-      "z9g9phT_vaU"
-    ]
+    "uploaded": []
   },
-  "site_posts": 21
+  "site_posts": 28
 }

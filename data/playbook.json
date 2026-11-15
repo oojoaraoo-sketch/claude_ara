@@ -13,7 +13,8 @@
   },
   "photo": {
    "on": 1.0,
-   "off": 1.0
+   "off": 1.0,
+   "clip": 1.0
   }
  },
  "lessons": [],
@@ -39,7 +40,29 @@
      "off": 1.0
     }
    }
+  },
+  {
+   "at": "2026-11-15",
+   "scored": 0,
+   "weights": {
+    "theme": {
+     "midnight": 1.0,
+     "ember": 1.0,
+     "paper": 1.0,
+     "forest": 1.0
+    },
+    "hook": {
+     "question": 1.0,
+     "number": 1.0,
+     "contrast": 1.0
+    },
+    "photo": {
+     "on": 1.0,
+     "off": 1.0,
+     "clip": 1.0
+    }
+   }
   }
  ],
- "updated_at": "2026-11-15T13:25:13+00:00"
+ "updated_at": "2026-11-15T16:46:00+00:00"
 }
