@@ -1,13 +1,20 @@
 """공공데이터포털 키가 이 PC(한국 IP)에서 동작하는지 확인한다. 키는 화면에 표시되지 않는다.
 
+사용법: 인증키(Decoding)를 Ctrl+C로 복사한 뒤
     .venv\\Scripts\\python.exe scripts\\check_key.py
 """
-import getpass
+import subprocess
 
 import requests
 
-URL = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
-key = getpass.getpass("일반 인증키(Decoding)를 붙여넣고 Enter (화면에 안 보이는 게 정상): ").strip()
+URL = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev"
+
+key = subprocess.run(["powershell", "-NoProfile", "-Command", "Get-Clipboard -Raw"],
+                     capture_output=True, text=True, encoding="utf-8").stdout.strip()
+if len(key) < 20 or " " in key or "\n" in key:
+    raise SystemExit("클립보드에 인증키가 없습니다. 공공데이터포털에서 일반 인증키(Decoding)를 Ctrl+C로 복사한 뒤 다시 실행하세요.")
+print(f"클립보드에서 키를 읽었습니다 (길이 {len(key)}자, 앞 4자리 {key[:4]}…)")
+
 r = requests.get(URL, params={"serviceKey": key, "LAWD_CD": "11110", "DEAL_YMD": "202610",
                               "pageNo": 1, "numOfRows": 1}, timeout=30)
 body = r.text.replace(key, "***")
