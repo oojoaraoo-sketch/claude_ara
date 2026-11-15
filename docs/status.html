@@ -80,9 +80,9 @@ footer { color: var(--muted); font-size: .82rem }
       <div class="ch ok"><span class="name">YouTube 숏츠</span><span class="pill ok">운영 중</span>
         <span class="num">10 <small>편 공개</small></span>
         <span class="note">매일 최대 2편 · 채널 인증 완료</span></div>
-      <div class="ch bad"><span class="name">Instagram 릴스</span><span class="pill bad">실패 중</span>
+      <div class="ch bad"><span class="name">Instagram 릴스</span><span class="pill bad">차단됨</span>
         <span class="num">0 <small>편</small></span>
-        <span class="note">“토큰을 읽을 수 없음” 오류 4건 · 진단 문구 추가, 11-16 실행 뒤 필요하면 토큰 재등록</span></div>
+        <span class="note">Meta 개발자 계정이 “계정 확인 필요”로 막혀 API 접근 차단 · 사용자 확인 후 토큰 재등록</span></div>
       <div class="ch ok"><span class="name">TikTok</span><span class="pill ok">운영 중</span>
         <span class="num">3 <small>편 공개</small></span>
         <span class="note">매일 08:10 PC 예약 작업 · PC·크롬 켜져 있어야 함</span></div>
@@ -122,9 +122,11 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="box">
       <h2>사용자가 할 일</h2>
       <ul>
-        <li><b>Instagram 토큰 재등록</b> (11-16 실행에서도 실패하면): 시스템 사용자 토큰 새로 생성 → Ctrl+C → <code>scripts\setup_instagram.ps1</code> 다시 실행</li>
+        <li><b>Meta 개발자 계정 확인</b>: developers.facebook.com 의 “계정 확인” 절차 완료 → Claude가 토큰 재등록</li>
+        <li><b>Pexels·Pixabay 가입</b> → API 키 복사 → Claude가 등록</li>
         <li>2~3주 뒤 글 20~30편이 쌓이면 애드센스 신청 (블로그 전용 연락 이메일 준비)</li>
-        <li>(선택) TikTok 아이디 변경 여부 결정 (지금은 개인 이름 형태)</li>
+        <li class="done">YouTube 권한 재동의 (분석 포함)</li>
+        <li class="done">TikTok 아이디 유지 결정</li>
         <li class="done">매일 점검·주간 탐색 예약 작업 첫 실행</li>
         <li class="done">TikTok 예약 작업 크롬 권한 승인</li>
         <li class="done">Meta 비즈니스 이메일 인증</li>
@@ -134,7 +136,7 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="box">
       <h2>Claude가 할 일</h2>
       <ol>
-        <li>11-16 실행에서 Instagram 결과와 토큰 진단(길이·이상 문자 수) 확인</li>
+        <li>11-16 실행에서 YouTube 시청 지속률 수집 확인</li>
         <li>11-16 TikTok 예약 작업 결과 확인 (새 영상 표지가 검지 않은지)</li>
         <li>매 실행 후 새 글·숏츠 직접 품질 검토</li>
         <li>Google 서치 콘솔·네이버 서치어드바이저 등록</li>
