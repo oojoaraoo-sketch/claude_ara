@@ -8,3 +8,4 @@ data/demo.db
 client_secret*.json
 
 tiktok_upload/
+private/

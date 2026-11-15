@@ -1,0 +1,166 @@
+<title>실거래가 리포트 운영 현황</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 관제판 — 위에서 아래로 "지금 상태 → 하루 흐름 → 할 일 → 기록". 숫자는 등폭 글꼴로 정렬 */
+:root {
+  --bg: #f3f5f7; --panel: #ffffff; --ink: #18212b; --muted: #5b6875; --line: #dde3e9;
+  --accent: #1f5f8b; --ok: #1e7a4f; --warn: #a86700; --bad: #b3261e;
+  --ok-bg: #e5f3ec; --warn-bg: #fbf0dc; --bad-bg: #f9e4e2; --chip: #eaf0f5;
+  --sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161c; --panel: #18202a; --ink: #e6ebf0; --muted: #98a5b2; --line: #2a3542;
+  --accent: #6fb0dd; --ok: #5cc493; --warn: #e2a73c; --bad: #ef7d74;
+  --ok-bg: #15301f; --warn-bg: #352a12; --bad-bg: #3a1a18; --chip: #213040; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11161c; --panel: #18202a; --ink: #e6ebf0; --muted: #98a5b2; --line: #2a3542;
+  --accent: #6fb0dd; --ok: #5cc493; --warn: #e2a73c; --bad: #ef7d74;
+  --ok-bg: #15301f; --warn-bg: #352a12; --bad-bg: #3a1a18; --chip: #213040; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 48px }
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 28px }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 14px }
+h1 { font-size: 1.7rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+.sub { color: var(--muted); margin: 2px 0 0 }
+.stamp { font-family: var(--mono); font-size: .85rem; color: var(--muted); text-align: right }
+.stamp b { color: var(--ink); font-weight: 500 }
+h2 { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; font-weight: 500 }
+section { min-width: 0 }
+.channels { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px }
+.ch { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; border-top: 4px solid var(--line) }
+.ch.ok { border-top-color: var(--ok) } .ch.warn { border-top-color: var(--warn) } .ch.bad { border-top-color: var(--bad) }
+.ch .name { font-weight: 700 }
+.ch .num { font-family: var(--mono); font-size: 1.6rem; font-variant-numeric: tabular-nums; line-height: 1.2 }
+.ch .num small { font-size: .8rem; color: var(--muted); font-family: var(--sans) }
+.ch .note { color: var(--muted); font-size: .85rem }
+.pill { display: inline-block; font-size: .75rem; font-weight: 500; padding: 1px 8px; border-radius: 999px; justify-self: start }
+.pill.ok { background: var(--ok-bg); color: var(--ok) } .pill.warn { background: var(--warn-bg); color: var(--warn) } .pill.bad { background: var(--bad-bg); color: var(--bad) }
+.flow { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto }
+.flow ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 0; min-width: 760px }
+.flow li { padding: 0 14px; border-left: 2px solid var(--line); display: grid; gap: 4px; align-content: start }
+.flow li:first-child { border-left-color: var(--accent) }
+.flow .t { font-family: var(--mono); color: var(--accent); font-size: .85rem }
+.flow .w { font-weight: 700 } .flow .d { color: var(--muted); font-size: .85rem }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px }
+.box ul, .box ol { margin: 0; padding-left: 1.2em; display: grid; gap: 8px }
+.who { font-size: .75rem; background: var(--chip); color: var(--accent); padding: 1px 8px; border-radius: 4px; margin-left: 6px; font-weight: 500 }
+.done { color: var(--muted); text-decoration: line-through }
+table { width: 100%; border-collapse: collapse; font-size: .9rem }
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: .78rem; color: var(--muted); font-weight: 500; letter-spacing: .04em }
+tr:last-child td { border-bottom: 0 }
+td.date, td.c { font-family: var(--mono); font-size: .82rem; white-space: nowrap; color: var(--muted) }
+a { color: var(--accent) }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.rules { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none }
+.rules li { background: var(--chip); border-radius: 6px; padding: 4px 10px; font-size: .85rem }
+footer { color: var(--muted); font-size: .82rem }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>실거래가 리포트 운영 현황</h1>
+      <p class="sub">서울 아파트 실거래 데이터로 블로그·YouTube·Instagram·TikTok 콘텐츠를 매일 자동 발행</p>
+    </div>
+    <div class="stamp">마지막 갱신 <b>2026-11-15</b><br>다음 자동 실행 <b>11-16 06:00</b></div>
+  </header>
+
+  <section>
+    <h2>채널 상태</h2>
+    <div class="channels">
+      <div class="ch ok"><span class="name">블로그</span><span class="pill ok">운영 중</span>
+        <span class="num">14 <small>편</small></span>
+        <span class="note"><a href="https://silgeorae-report.github.io/" target="_blank" rel="noopener">silgeorae-report.github.io</a></span></div>
+      <div class="ch ok"><span class="name">YouTube 숏츠</span><span class="pill ok">운영 중</span>
+        <span class="num">8 <small>편 공개</small></span>
+        <span class="note">매일 최대 2편 · 채널 인증 완료</span></div>
+      <div class="ch warn"><span class="name">Instagram 릴스</span><span class="pill warn">수정 후 확인 대기</span>
+        <span class="num">0 <small>편</small></span>
+        <span class="note">토큰 줄바꿈 문제 수정 완료 · 11-16 실행에서 확인</span></div>
+      <div class="ch warn"><span class="name">TikTok</span><span class="pill warn">시작</span>
+        <span class="num">1 <small>편 (검토 중)</small></span>
+        <span class="note">매일 08:10 PC 예약 작업 · PC·크롬 켜져 있어야 함</span></div>
+      <div class="ch ok"><span class="name">데이터 수집</span><span class="pill ok">정상</span>
+        <span class="num">25 <small>개 구</small></span>
+        <span class="note">최근 3개월 매일 재수집 · 14개월 보충</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>하루 자동 흐름 (KST)</h2>
+    <div class="flow"><ol>
+      <li><span class="t">06:00</span><span class="w">수집·작성</span><span class="d">국토부 API 수집 → Claude(Opus)가 구별 글 작성, 하루 최대 8편</span></li>
+      <li><span class="t">06:10~</span><span class="w">품질 검사</span><span class="d">근거 없는 숫자·금지어 검사 → Claude 2차 검수 → 지적 시 최대 3회 재작성</span></li>
+      <li><span class="t">06:20~</span><span class="w">숏츠·YouTube</span><span class="d">대본 검사 → 영상 렌더 → YouTube 공개 업로드</span></li>
+      <li><span class="t">06:25~</span><span class="w">배포·릴스</span><span class="d">블로그 배포 → Instagram 릴스 게시 → 오류 시 메일 알림</span></li>
+      <li><span class="t">08:10</span><span class="w">TikTok</span><span class="d">이 PC의 예약 작업이 크롬으로 최대 2편 업로드</span></li>
+    </ol></div>
+  </section>
+
+  <section class="two">
+    <div class="box">
+      <h2>사용자가 할 일</h2>
+      <ul>
+        <li>예약 작업 “틱톡 숏츠 자동 업로드”를 앱에서 한 번 <b>Run now</b> → 크롬 권한 모두 허용</li>
+        <li>2~3주 뒤 글 20~30편이 쌓이면 애드센스 신청 (블로그 전용 연락 이메일 준비)</li>
+        <li>(선택) TikTok 아이디 변경 여부 결정 (지금은 개인 이름 형태)</li>
+        <li class="done">Meta 비즈니스 이메일 인증</li>
+        <li class="done">YouTube 채널 휴대폰 인증</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h2>Claude가 할 일</h2>
+      <ol>
+        <li>11-16 실행에서 Instagram 릴스 게시 성공 확인</li>
+        <li>11-16 TikTok 예약 작업 결과와 첫 영상 공개 전환 확인</li>
+        <li>매 실행 후 새 글·숏츠 직접 품질 검토</li>
+        <li>Google 서치 콘솔·네이버 서치어드바이저 등록</li>
+        <li>전용 이메일이 생기면 소개·개인정보 페이지 연락처 정리</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>최근 품질 검토</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>발견한 문제</th><th>범위</th><th>조치</th></tr></thead>
+      <tbody>
+        <tr><td>평당 가격을 “㎡당”으로 표기</td><td>기존 글 5편</td><td>전부 수정, 지침·검수에 단위 규칙 추가</td></tr>
+        <tr><td>“재건축 추진 단지” 등 데이터에 없는 단정</td><td>강남·송파</td><td>문장 삭제, 작성·검수 금지 항목 추가</td></tr>
+        <tr><td>최고가 단지 동을 거래 최다 동으로 착각</td><td>반려 4편</td><td>최고가 단지 동(top_apt_umd) 데이터 추가</td></tr>
+        <tr><td>조사 오류(길음동와는)</td><td>반려 1편</td><td>자동 조사 교정 확장</td></tr>
+        <tr><td>11-15 2차 실행 새 글 6편</td><td>직접 열람</td><td>알려진 오류 패턴 없음</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>지켜야 할 원칙</h2>
+    <ul class="rules">
+      <li>유료 결제 수단 사용 안 함</li><li>기본 모델 Opus</li><li>본명·연락처·이메일 아이디 비공개</li>
+      <li>품질은 Claude가 직접 검토</li><li>투자 권유 표현 금지</li><li>변경 시 문서·현황 갱신</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>변경 기록</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>날짜</th><th>변경</th><th>커밋</th></tr></thead>
+      <tbody>
+        <tr><td class="date">11-15</td><td>Instagram 비밀값 공백 제거, 조사 교정 확장</td><td class="c">cecb595</td></tr>
+        <tr><td class="date">11-15</td><td>TikTok 프로필 정리·첫 업로드·매일 예약 작업, 영상 첫 프레임 검은 화면 제거</td><td class="c">e3db8c0</td></tr>
+        <tr><td class="date">11-15</td><td>품질 강화: 단위·소재지 오류 수정, 2차 검수 강화, 최대 3회 재작성</td><td class="c">1b2e55e</td></tr>
+        <tr><td class="date">11-15</td><td>Meta 비즈니스 포트폴리오·시스템 사용자 토큰으로 Instagram 연동</td><td class="c">8622b1c</td></tr>
+        <tr><td class="date">11-15</td><td>블로그 주소를 silgeorae-report.github.io로 이전 (개인 아이디 비공개화)</td><td class="c">2384ca4</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <footer>상세 기준은 저장소의 docs/MASTER.md, 진행 기록은 docs/STATUS.md에 있습니다. 이 페이지는 변경이 있을 때마다 Claude가 갱신합니다.</footer>
+</div>
