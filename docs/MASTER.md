@@ -20,7 +20,7 @@
 
 ## 3. 전체 구조
 ```
-매일 06:00 KST  GitHub Actions (daily-pipeline)
+매일 01:00 KST  GitHub Actions (daily-pipeline)
   run       : 테스트 → 수집(data.go.kr) → 글 생성(Claude CLI) → 규칙 검사 → Claude 2차 검수 → 사이트 빌드
               → 숏츠 생성(Pillow+ffmpeg+TTS) → YouTube 업로드 → DB 커밋
   deploy    : GitHub Pages 배포 (public/, media/*.mp4 포함)
@@ -29,9 +29,9 @@
 매일 08:10 KST  이 PC의 Claude 예약 작업 "틱톡 숏츠 자동 업로드"
   scripts/tiktok_prepare.py 로 대기열 준비 → 크롬(Claude in Chrome)으로 TikTok Studio 업로드 (하루 최대 2편)
   → TikTok 조회수를 읽어 data/tiktok_metrics.json 으로 저장소에 기록
-매일 09:00 KST  이 PC의 Claude 예약 작업 "매일 운영 점검·품질 검토"
+매일 02:00 KST  이 PC의 Claude 예약 작업 "매일 운영 점검·품질 검토"
   실행 결과 점검 → 새 글·영상 직접 검토·수정 → 재발 방지 규칙 보강 → STATUS.md·현황 아티팩트 갱신
-매주 월 10:00   이 PC의 Claude 예약 작업 "콘텐츠 고도화 탐색 (주간)"
+매주 월 02:30   이 PC의 Claude 예약 작업 "콘텐츠 고도화 탐색 (주간)"
   인기 Claude 스킬·모션 기법·Claude 활용법·성장 방법 탐색 → docs/RESEARCH.md 기록 → 대기열에서 1개 구현
 ```
 

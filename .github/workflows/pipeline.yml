@@ -2,7 +2,7 @@ name: daily-pipeline
 
 on:
   schedule:
-    - cron: "0 21 * * *"   # 매일 06:00 KST
+    - cron: "0 16 * * *"   # 매일 01:00 KST (Claude 구독 사용량이 큰 작업은 새벽 1~3시에)
   workflow_dispatch: {}      # Actions 탭에서 수동 실행
 
 permissions:
