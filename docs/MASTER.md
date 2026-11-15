@@ -63,7 +63,7 @@
 | `pipeline/generate.py` | 글 계획·생성. 지적을 피드백으로 최대 3회 작성 |
 | `pipeline/shorts.py`, `tts.py` | 숏츠 대본 검사·제작 흐름·음성(edge → gTTS) |
 | `pipeline/motion.py` (+`render.py` 공용 글꼴·합치기) | 모션 인포그래픽 렌더러: 카운트업, 막대·선·순위 애니메이션, 구절 자막, 진행 막대, 테마 |
-| `pipeline/timelapse3d.py` | 서울 25개 구 3D 타임랩스(구별 평당 중위가 12개월, 직접 등각 투영). `python -m pipeline.timelapse3d --out out/seoul_3d.mp4` |
+| `pipeline/timelapse3d.py` | 서울 25개 구 3D 타임랩스(구별 평당 중위가 12개월, 직접 등각 투영). `python -m pipeline.timelapse3d --out out/seoul_3d.mp4`. 매달 한 번 `produce_monthly`가 숏츠로 만들어 게시 흐름에 넣음 (`[shorts] timelapse_monthly`) |
 | `pipeline/assets.py` | 공개 사진 수급과 라이선스·출처 기록 |
 | `pipeline/metrics.py`, `learn.py` | 성과 수집, 실험 가중치·교훈 갱신 (`data/playbook.json`) |
 | `docs/RESEARCH.md` | 주간 탐색 기록과 구현 대기열 |
