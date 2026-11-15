@@ -61,6 +61,12 @@ class QATest(unittest.TestCase):
     def test_number_from_facts_allowed(self):
         self.assertEqual(qa.check("gu_monthly", self.draft("거래 120건."), self.facts, self.cfg), [])
 
+    def test_list_numbers_and_rank_allowed(self):
+        self.assertEqual(qa.check("gu_monthly", self.draft("1. 거래 {{trade_count}}\n2. 표의 1위 단지"), self.facts,
+                                  self.cfg), [])
+        p = qa.check("gu_monthly", self.draft("단지 2곳에서 거래"), self.facts, self.cfg)
+        self.assertTrue(any("'2'" in x for x in p))
+
     def test_unknown_placeholder(self):
         p = qa.check("gu_monthly", self.draft("{{made_up}}"), self.facts, self.cfg)
         self.assertTrue(any("made_up" in x for x in p))

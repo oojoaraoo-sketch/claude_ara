@@ -6,6 +6,8 @@ MARKER = re.compile(r"\[\[(CHART|TABLE:[a-z0-9_]+)\]\]")
 DIGITS = re.compile(r"\d+(?:[.,]\d+)*")
 # 설명에 자연스럽게 쓰일 수 있는 고정 상수 (평 환산, 소형 기준, 신고기한)
 ALWAYS_OK = {"3.3", "60", "30"}
+# 데이터 값이 아닌 숫자: 마크다운 번호 목록("1. "), 표 순위("1위"~"10위")
+NON_DATA = re.compile(r"(?m)^\s*\d{1,2}[.)]\s|(?<!\d)(?:10|[1-9])(?=위)")
 
 REQUIRED_MARKERS = {
     "gu_monthly": {"CHART", "TABLE:top10"},
@@ -34,7 +36,7 @@ def check(kind: str, draft: dict, facts: dict, cfg: dict) -> list[str]:
         for key in PLACEHOLDER.findall(text):
             if key not in facts:
                 problems.append(f"{name}: 존재하지 않는 플레이스홀더 {{{{{key}}}}}")
-        stripped = MARKER.sub("", PLACEHOLDER.sub("", text))
+        stripped = NON_DATA.sub("", MARKER.sub("", PLACEHOLDER.sub("", text)))
         for num in DIGITS.findall(stripped):
             if num not in allowed and num.replace(",", "") not in allowed:
                 problems.append(f"{name}: 근거 없는 숫자 '{num}' 직접 기재")
