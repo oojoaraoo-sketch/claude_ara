@@ -75,14 +75,14 @@ footer { color: var(--muted); font-size: .82rem }
     <h2>채널 상태</h2>
     <div class="channels">
       <div class="ch ok"><span class="name">블로그</span><span class="pill ok">운영 중</span>
-        <span class="num">14 <small>편</small></span>
+        <span class="num">21 <small>편</small></span>
         <span class="note"><a href="https://silgeorae-report.github.io/" target="_blank" rel="noopener">silgeorae-report.github.io</a></span></div>
       <div class="ch ok"><span class="name">YouTube 숏츠</span><span class="pill ok">운영 중</span>
-        <span class="num">8 <small>편 공개</small></span>
+        <span class="num">10 <small>편 공개</small></span>
         <span class="note">매일 최대 2편 · 채널 인증 완료</span></div>
-      <div class="ch warn"><span class="name">Instagram 릴스</span><span class="pill warn">수정 후 확인 대기</span>
+      <div class="ch bad"><span class="name">Instagram 릴스</span><span class="pill bad">실패 중</span>
         <span class="num">0 <small>편</small></span>
-        <span class="note">토큰 줄바꿈 문제 수정 완료 · 11-16 실행에서 확인</span></div>
+        <span class="note">“토큰을 읽을 수 없음” 오류 4건 · 진단 문구 추가, 11-16 실행 뒤 필요하면 토큰 재등록</span></div>
       <div class="ch ok"><span class="name">TikTok</span><span class="pill ok">운영 중</span>
         <span class="num">3 <small>편 공개</small></span>
         <span class="note">매일 08:10 PC 예약 작업 · PC·크롬 켜져 있어야 함</span></div>
@@ -108,11 +108,11 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="tablewrap"><table>
       <thead><tr><th>단계</th><th>하는 일</th><th>상태</th></tr></thead>
       <tbody>
-        <tr><td>실험</td><td>영상마다 테마 4종·도입부 3종·사진 배경 유무를 바꿔 가며 제작</td><td><span class="pill warn">첫 실행 확인 대기</span></td></tr>
+        <tr><td>실험</td><td>영상마다 테마 4종·도입부 3종·사진 배경 유무를 바꿔 가며 제작 (11-15 첫 영상 2편 확인)</td><td><span class="pill ok">동작 중</span></td></tr>
         <tr><td>평가</td><td>YouTube·Instagram·TikTok 조회수와 반응을 매일 수집, 게시 2일 뒤 채널 평균 대비 점수 계산</td><td><span class="pill warn">수집 시작</span></td></tr>
         <tr><td>개선</td><td>잘된 조합의 비중을 높이고, 주 1회 Claude가 상·하위 영상을 비교해 제목·도입부 교훈 도출</td><td><span class="pill warn">표본 쌓는 중</span></td></tr>
         <tr><td>적용</td><td>교훈과 비중이 다음 영상의 대본 지침과 화면 설정에 자동 반영</td><td><span class="pill ok">연결됨</span></td></tr>
-        <tr><td>매일 점검</td><td>02:00 Claude가 실행 결과와 새 글·영상을 직접 검토하고 고침, 이 페이지 갱신</td><td><span class="pill warn">권한 승인 필요</span></td></tr>
+        <tr><td>매일 점검</td><td>02:00 Claude가 실행 결과와 새 글·영상을 직접 검토하고 고침, 이 페이지 갱신</td><td><span class="pill ok">1회차 완료</span></td></tr>
         <tr><td>주간 탐색</td><td>월 02:30 인기 Claude 스킬·모션 기법·새 표현을 찾아 기록하고 1개 구현. 1회차: 3D 타임랩스 렌더러 완성 (다음: 월 1회 자동 게시 연결)</td><td><span class="pill ok">1회차 완료</span></td></tr>
       </tbody>
     </table></div>
@@ -122,9 +122,10 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="box">
       <h2>사용자가 할 일</h2>
       <ul>
-        <li>예약 작업 “매일 운영 점검·품질 검토”와 “콘텐츠 고도화 탐색 (주간)”을 한 번씩 <b>Run now</b> → 권한 허용</li>
+        <li><b>Instagram 토큰 재등록</b> (11-16 실행에서도 실패하면): 시스템 사용자 토큰 새로 생성 → Ctrl+C → <code>scripts\setup_instagram.ps1</code> 다시 실행</li>
         <li>2~3주 뒤 글 20~30편이 쌓이면 애드센스 신청 (블로그 전용 연락 이메일 준비)</li>
         <li>(선택) TikTok 아이디 변경 여부 결정 (지금은 개인 이름 형태)</li>
+        <li class="done">매일 점검·주간 탐색 예약 작업 첫 실행</li>
         <li class="done">TikTok 예약 작업 크롬 권한 승인</li>
         <li class="done">Meta 비즈니스 이메일 인증</li>
         <li class="done">YouTube 채널 휴대폰 인증</li>
@@ -133,7 +134,7 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="box">
       <h2>Claude가 할 일</h2>
       <ol>
-        <li>11-16 실행에서 Instagram 릴스 게시 성공 확인</li>
+        <li>11-16 실행에서 Instagram 결과와 토큰 진단(길이·이상 문자 수) 확인</li>
         <li>11-16 TikTok 예약 작업 결과 확인 (새 영상 표지가 검지 않은지)</li>
         <li>매 실행 후 새 글·숏츠 직접 품질 검토</li>
         <li>Google 서치 콘솔·네이버 서치어드바이저 등록</li>
@@ -152,6 +153,8 @@ footer { color: var(--muted); font-size: .82rem }
         <tr><td>최고가 단지 동을 거래 최다 동으로 착각</td><td>반려 4편</td><td>최고가 단지 동(top_apt_umd) 데이터 추가</td></tr>
         <tr><td>조사 오류(길음동와는)</td><td>반려 1편</td><td>자동 조사 교정 확장</td></tr>
         <tr><td>11-15 2차 실행 새 글 6편</td><td>직접 열람</td><td>알려진 오류 패턴 없음</td></tr>
+        <tr><td>소형(60㎡ 이하)의 나머지를 “중대형”으로 표현, “육십 제곱미터” 같은 한글 숫자</td><td>글 9편</td><td>전부 수정, 작성 지침·자동 검사 규칙 추가</td></tr>
+        <tr><td>11-15 숏츠 2편(성북·중랑) 프레임 검토</td><td>장면 7개씩</td><td>글자 겹침·빈 화면·부적절한 사진 없음</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -169,6 +172,8 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="tablewrap"><table>
       <thead><tr><th>날짜</th><th>변경</th><th>커밋</th></tr></thead>
       <tbody>
+        <tr><td class="date">11-15</td><td>매일 점검 1회차: 글 9편 면적 표현·숫자 표기 수정, 검사 규칙 보강</td><td class="c">b3427ad</td></tr>
+        <tr><td class="date">11-15</td><td>Instagram 토큰 BOM·따옴표 제거, 실패 시 토큰 모양 진단</td><td class="c">54ea7d7</td></tr>
         <tr><td class="date">11-15</td><td>주간 탐색 1회차: 서울 25개 구 3D 타임랩스 렌더러(구별 평당 중위가 12개월), 탐색 기록 9건, 대기열 재정리(YouTube 반복 콘텐츠 기준 대비 등)</td><td class="c">8cf1dc8</td></tr>
         <tr><td class="date">11-15</td><td>모션 인포그래픽, 공개 사진 수급, 성과 학습 고리, 매일 점검·주간 탐색 예약 작업 추가</td><td class="c">8e8a0a8</td></tr>
         <tr><td class="date">11-15</td><td>운영 문서·현황 페이지 추가, 계정 아이디가 담긴 커밋을 공개 기록에서 제거</td><td class="c">af95ab6</td></tr>
