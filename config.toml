@@ -17,7 +17,7 @@ google_site_verification = ""      # 서치 콘솔 인증 메타태그 값
 # 국토교통부 아파트 매매 실거래가 상세 자료
 endpoint = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev"
 months_back = 3           # 매일 최근 N개월을 다시 수집 (신고기한 30일이라 지난달 데이터가 계속 늘어남)
-backfill_months = 13      # 최초 실행 시(DB 비어있음) 수집할 개월 수 — 전년 동월 비교용
+backfill_months = 14      # 이 기간 중 DB에 없는 달은 자동 보충 — 지난달의 전년 동월 비교용(14개월 필요)
 regions = "seoul"         # pipeline/regions.py 의 지역 묶음 이름
 
 [generate]

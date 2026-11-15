@@ -50,11 +50,16 @@ def do_collect(conn, cfg, summary, demo=False):
         log(f"[demo] 가상 거래 {new}건 적재")
         return
     c = cfg["collect"]
-    n_months = c["backfill_months"] if db.count_trades(conn) == 0 else c["months_back"]
-    months = collect.recent_months(n_months, datetime.now(KST).date())
-    new, errors = 0, []
+    today = datetime.now(KST).date()
+    recent = collect.recent_months(c["months_back"], today)
+    window = collect.recent_months(c["backfill_months"], today)
+    have = {(r[0], r[1]) for r in conn.execute("SELECT DISTINCT sgg_cd, deal_ym FROM trades")}
+    new, errors, calls = 0, [], 0
     for sgg, (name, _) in regions.items():
+        # 최근 N개월은 매일 다시, 그보다 오래된 달은 DB에 없을 때만 (자동 보충)
+        months = recent + [ym for ym in window if ym not in recent and (sgg, ym) not in have]
         for ym in months:
+            calls += 1
             try:
                 new += db.upsert_trades(conn, collect.fetch_month(c["endpoint"], sgg, ym))
             except Exception as e:  # 한 지역 실패가 전체를 멈추지 않게
@@ -64,7 +69,7 @@ def do_collect(conn, cfg, summary, demo=False):
     summary["collected_new"] = new
     summary["collect_errors"] = errors
     log(f"수집 완료: 신규 {new}건, 오류 {len(errors)}건")
-    if errors and len(errors) == len(regions) * len(months):
+    if errors and len(errors) == calls:
         raise RuntimeError("모든 수집 요청이 실패했습니다: " + errors[0])
 
 
