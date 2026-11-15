@@ -68,21 +68,21 @@ footer { color: var(--muted); font-size: .82rem }
       <h1>실거래가 리포트 운영 현황</h1>
       <p class="sub">서울 아파트 실거래 데이터로 블로그·YouTube·Instagram·TikTok 콘텐츠를 매일 자동 발행</p>
     </div>
-    <div class="stamp">마지막 갱신 <b>2026-11-15</b><br>다음 자동 실행 <b>11-16 01:00</b></div>
+    <div class="stamp">마지막 갱신 <b>2026-11-16</b><br>다음 자동 실행 <b>11-17 01:00</b></div>
   </header>
 
   <section>
     <h2>채널 상태</h2>
     <div class="channels">
       <div class="ch ok"><span class="name">블로그</span><span class="pill ok">운영 중</span>
-        <span class="num">21 <small>편</small></span>
+        <span class="num">28 <small>편</small></span>
         <span class="note"><a href="https://silgeorae-report.github.io/" target="_blank" rel="noopener">silgeorae-report.github.io</a></span></div>
-      <div class="ch ok"><span class="name">YouTube 숏츠</span><span class="pill ok">운영 중</span>
+      <div class="ch warn"><span class="name">YouTube 숏츠</span><span class="pill warn">한도 초과</span>
         <span class="num">10 <small>편 공개</small></span>
-        <span class="note">매일 최대 2편 · 채널 인증 완료</span></div>
+        <span class="note">11-16 2편 하루 업로드 한도 초과로 실패 · 다음 실행에서 재시도</span></div>
       <div class="ch ok"><span class="name">Instagram 릴스</span><span class="pill ok">운영 중</span>
-        <span class="num">2 <small>편</small></span>
-        <span class="note">Meta 계정 확인 후 토큰 재등록 · 11-15 첫 게시 성공</span></div>
+        <span class="num">4 <small>편</small></span>
+        <span class="note">11-16 자동 게시 2편 정상</span></div>
       <div class="ch ok"><span class="name">TikTok</span><span class="pill ok">운영 중</span>
         <span class="num">3 <small>편 공개</small></span>
         <span class="note">매일 08:10 PC 예약 작업 · PC·크롬 켜져 있어야 함</span></div>
@@ -112,7 +112,7 @@ footer { color: var(--muted); font-size: .82rem }
         <tr><td>평가</td><td>YouTube·Instagram·TikTok 조회수와 반응을 매일 수집, 게시 2일 뒤 채널 평균 대비 점수 계산</td><td><span class="pill warn">수집 시작</span></td></tr>
         <tr><td>개선</td><td>잘된 조합의 비중을 높이고, 주 1회 Claude가 상·하위 영상을 비교해 제목·도입부 교훈 도출</td><td><span class="pill warn">표본 쌓는 중</span></td></tr>
         <tr><td>적용</td><td>교훈과 비중이 다음 영상의 대본 지침과 화면 설정에 자동 반영</td><td><span class="pill ok">연결됨</span></td></tr>
-        <tr><td>매일 점검</td><td>02:00 Claude가 실행 결과와 새 글·영상을 직접 검토하고 고침, 이 페이지 갱신</td><td><span class="pill ok">1회차 완료</span></td></tr>
+        <tr><td>매일 점검</td><td>02:00 Claude가 실행 결과와 새 글·영상을 직접 검토하고 고침, 이 페이지 갱신</td><td><span class="pill ok">2회차 완료</span></td></tr>
         <tr><td>주간 탐색</td><td>월 02:30 인기 Claude 스킬·모션 기법·새 표현을 찾아 기록하고 1개 구현. 1회차: 3D 타임랩스 렌더러 완성 (다음: 월 1회 자동 게시 연결)</td><td><span class="pill ok">1회차 완료</span></td></tr>
       </tbody>
     </table></div>
@@ -137,7 +137,7 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="box">
       <h2>Claude가 할 일</h2>
       <ol>
-        <li>11-16 실행에서 YouTube 시청 지속률 수집 확인</li>
+        <li>11-17 실행에서 YouTube 재업로드(강남·영등포) 확인</li>
         <li>11-16 TikTok 예약 작업 결과 확인 (새 영상 표지가 검지 않은지)</li>
         <li>매 실행 후 새 글·숏츠 직접 품질 검토</li>
         <li>Google 서치 콘솔·네이버 서치어드바이저 등록</li>
@@ -151,6 +151,9 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="tablewrap"><table>
       <thead><tr><th>발견한 문제</th><th>범위</th><th>조치</th></tr></thead>
       <tbody>
+        <tr><td>신고가가 수집 기간(2025년 10월~) 안의 비교인데 기준을 안 밝힘</td><td>전체 28편</td><td>글 하단에 기준 표기, '역대 최고' 자동 차단</td></tr>
+        <tr><td>“중위가가 줄었다”(가격엔 ‘내렸다’), 근거 없는 “단지 수가 많지 않아”</td><td>은평·종로</td><td>수정, 가격 표현 자동 검사 추가</td></tr>
+        <tr><td>11-16 숏츠 2편(강남·영등포) 프레임 검토</td><td>장면 5개씩</td><td>이상 없음 · 강남 해시태그에 데이터 밖 단지명 → 지침 보강</td></tr>
         <tr><td>평당 가격을 “㎡당”으로 표기</td><td>기존 글 5편</td><td>전부 수정, 지침·검수에 단위 규칙 추가</td></tr>
         <tr><td>“재건축 추진 단지” 등 데이터에 없는 단정</td><td>강남·송파</td><td>문장 삭제, 작성·검수 금지 항목 추가</td></tr>
         <tr><td>최고가 단지 동을 거래 최다 동으로 착각</td><td>반려 4편</td><td>최고가 단지 동(top_apt_umd) 데이터 추가</td></tr>
@@ -175,6 +178,7 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="tablewrap"><table>
       <thead><tr><th>날짜</th><th>변경</th><th>커밋</th></tr></thead>
       <tbody>
+        <tr><td class="date">11-16</td><td>매일 점검 2회차: 글 7편 검토, 표현 2곳 수정, 28편에 신고가 기준 표기, 검사 규칙 보강</td><td class="c">1a3595f</td></tr>
         <tr><td class="date">11-15</td><td>Instagram 토큰 재등록, 릴스 첫 게시 2편</td><td class="c">—</td></tr>
         <tr><td class="date">11-15</td><td>YouTube 분석 권한 재동의·시청 지속률 학습 반영, Pixabay 무료 영상 배경 추가</td><td class="c">56b60f4</td></tr>
         <tr><td class="date">11-15</td><td>매일 점검 1회차: 글 9편 면적 표현·숫자 표기 수정, 검사 규칙 보강</td><td class="c">b3427ad</td></tr>
