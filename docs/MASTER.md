@@ -28,7 +28,24 @@
   report    : 오류가 있으면 실패 표시 → GitHub 이메일 알림
 매일 08:10 KST  이 PC의 Claude 예약 작업 "틱톡 숏츠 자동 업로드"
   scripts/tiktok_prepare.py 로 대기열 준비 → 크롬(Claude in Chrome)으로 TikTok Studio 업로드 (하루 최대 2편)
+  → TikTok 조회수를 읽어 data/tiktok_metrics.json 으로 저장소에 기록
+매일 09:00 KST  이 PC의 Claude 예약 작업 "매일 운영 점검·품질 검토"
+  실행 결과 점검 → 새 글·영상 직접 검토·수정 → 재발 방지 규칙 보강 → STATUS.md·현황 아티팩트 갱신
+매주 월 10:00   이 PC의 Claude 예약 작업 "콘텐츠 고도화 탐색 (주간)"
+  인기 Claude 스킬·모션 기법·Claude 활용법·성장 방법 탐색 → docs/RESEARCH.md 기록 → 대기열에서 1개 구현
 ```
+
+### 스스로 나아지는 고리 (성과 → 개선 → 적용)
+1. **실험**: 영상마다 실험 변수(테마 4종, 도입부 유형 3종, 사진 배경 유무)를 가중치에 따라 고른다 (`learn.choose`, videos.variant에 기록)
+2. **평가**: 매일 조회수·반응을 모으고(`metrics.py`), 게시 2일 뒤 채널별 중앙값 대비 상대 점수를 낸다 (`learn.score`)
+3. **개선**: 변수 값별 평균 점수로 가중치를 고친다. 표본 3개 미만은 계속 시험. 주 1회 Claude가 상·하위 영상을 비교해 제목·도입부 교훈을 뽑는다 (`learn.update` → `data/playbook.json`)
+4. **적용**: 다음 영상의 렌더 설정과 대본 지침에 가중치와 교훈이 들어간다 (`learn.guidance`)
+5. **확장**: 주간 탐색 작업이 새 표현·형식을 찾아 구현하면 새 실험 변수나 새 콘텐츠 형식으로 고리에 들어온다
+
+### 공개 자료 사용 기준
+- 출처: 위키미디어 공용 (추후 Pexels·Pixabay). 허용 라이선스: CC0, 퍼블릭 도메인, CC BY, 공공누리 1유형만. SA·NC·ND 제외
+- 지도·로고·문서·인물 사진 제외, 후보 설명을 Claude가 읽고 선택. 쓴 자료는 `assets` 테이블에 기록하고 영상 화면·설명란에 출처 표기
+- 외부 코드·스킬은 그대로 설치하지 않고 읽고 이해한 뒤 직접 구현
 - DB: `data/pipeline.db` (SQLite, 저장소에 커밋). 테이블: trades, posts, videos, social_posts, runs, rejections 등
 - 실행 요약: `data/last_run.json` (비밀값 자동 제거)
 
@@ -41,7 +58,11 @@
 | `pipeline/write.py` | Claude CLI 호출, 글쓰기 지침(facts 정의), 2차 검수 프롬프트 |
 | `pipeline/qa.py` | 규칙 검사(근거 없는 숫자·금지어·마커), 플레이스홀더 채우기와 조사 자동 교정 |
 | `pipeline/generate.py` | 글 계획·생성. 지적을 피드백으로 최대 3회 작성 |
-| `pipeline/shorts.py`, `render.py`, `tts.py` | 숏츠 대본·장면 렌더·음성(edge → gTTS) |
+| `pipeline/shorts.py`, `tts.py` | 숏츠 대본 검사·제작 흐름·음성(edge → gTTS) |
+| `pipeline/motion.py` (+`render.py` 공용 글꼴·합치기) | 모션 인포그래픽 렌더러: 카운트업, 막대·선·순위 애니메이션, 구절 자막, 진행 막대, 테마 |
+| `pipeline/assets.py` | 공개 사진 수급과 라이선스·출처 기록 |
+| `pipeline/metrics.py`, `learn.py` | 성과 수집, 실험 가중치·교훈 갱신 (`data/playbook.json`) |
+| `docs/RESEARCH.md` | 주간 탐색 기록과 구현 대기열 |
 | `pipeline/youtube.py` | YouTube Data API 업로드 (공개) |
 | `pipeline/instagram.py` | 릴스 게시 (시스템 사용자 토큰=graph.facebook.com / IG 토큰=graph.instagram.com) |
 | `pipeline/site.py` | 정적 사이트 빌드, sitemap, media 복사 |
