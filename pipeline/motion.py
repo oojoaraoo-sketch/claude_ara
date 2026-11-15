@@ -359,7 +359,7 @@ class ClipBackground:
         self.proc = subprocess.Popen([
             FFMPEG, "-loglevel", "error", "-i", str(self.path), "-an",
             "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},"
-                   "eq=brightness=-0.22:saturation=0.75,gblur=sigma=2",
+                   "eq=saturation=0.75,colorchannelmixer=rr=0.5:gg=0.5:bb=0.5,gblur=sigma=2",  # 글자가 잘 보이게 절반 밝기
             "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE)
 
     def next(self) -> Image.Image:
