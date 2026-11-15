@@ -298,3 +298,21 @@ class Timelapse3DTest(unittest.TestCase):
         near = tl.project(0, 1, 0, 0.0, 1, 0, 0)[2]
         far = tl.project(0, -1, 0, 0.0, 1, 0, 0)[2]
         self.assertGreater(near, far)                                               # 남쪽(아래)이 앞
+
+    def test_monthly_script_and_skip(self):
+        from pipeline import timelapse3d as tl
+        from pipeline.config import load_config
+        facts = {"start_month": "2025년 10월", "end_month": "2026년 9월", "top1_gu": "강남구",
+                 "top1_ppp": "1억 1,730만원", "low1_gu": "도봉구", "low1_ppp": "2,528만원", "trade_total": "66,603건"}
+        sc = tl.script(facts, "https://example.com/")
+        self.assertEqual(tl.check(sc, facts, ["투자 추천"]), [])
+        self.assertIn("1억 1,730만원", sc["narration"])
+        bad = dict(sc, narration=sc["narration"] + " 내년엔 15% 오릅니다")
+        self.assertTrue(any("15" in p for p in tl.check(bad, facts)))              # 근거 없는 숫자 차단
+        self.assertEqual(tl.slug_for("202609"), "seoul-3d-202609")
+        with tempfile.TemporaryDirectory() as tmp:                                  # 이미 만든 달은 다시 만들지 않음
+            conn = db.connect(Path(tmp) / "t.db")
+            conn.execute("INSERT INTO videos (slug, title, description, tags, seconds, status, created_at, updated_at)"
+                         " VALUES ('seoul-3d-202609', 't', 'd', '[]', 1, 'uploaded', 'x', 'x')")
+            self.assertIsNone(tl.produce_monthly(conn, load_config(), Path(tmp), date(2026, 11, 16)))
+            conn.close()

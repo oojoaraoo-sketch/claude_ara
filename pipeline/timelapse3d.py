@@ -9,6 +9,7 @@
 """
 import argparse
 import math
+import re
 import statistics
 import subprocess
 from datetime import date
@@ -296,15 +297,20 @@ class Timelapse:
 
 
 def render(conn, out: Path, end_ym: str | None = None, months: int = 12, theme: str = "midnight",
-           site_title: str = "실거래가 리포트") -> dict:
-    data = seoul_facts(conn, end_ym or default_end(), months)
+           site_title: str = "실거래가 리포트", audio: Path | None = None, audio_secs: float = 0.0,
+           data: dict | None = None) -> dict:
+    data = data or seoul_facts(conn, end_ym or default_end(), months)
     tl = Timelapse(data, theme, site_title)
+    if audio_secs + 0.8 > tl.seconds:                   # 내레이션이 길면 마지막 정지 화면을 늘린다
+        tl.HOLD_END += audio_secs + 0.8 - tl.seconds
+        tl.seconds = audio_secs + 0.8
     n = round(tl.seconds * FPS)
     out.parent.mkdir(parents=True, exist_ok=True)
+    a_in = ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
     proc = subprocess.Popen([
         FFMPEG, "-y", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-        "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+        *a_in, "-af", "apad",
         "-map", "0:v", "-map", "1:a", "-t", f"{n / FPS:.3f}", "-pix_fmt", "yuv420p",
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-r", str(FPS),
         "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", str(out),
@@ -318,6 +324,96 @@ def render(conn, out: Path, end_ym: str | None = None, months: int = 12, theme: 
     if proc.wait() != 0:
         raise RuntimeError("ffmpeg 인코딩 실패")
     return {"path": str(out), "seconds": round(n / FPS, 2), "facts": data["facts"], "months": data["months"]}
+
+
+# ---------------------------------------------------------------- 월 1회 숏폼 게시
+
+FIXED_NUMBERS = {"25", "3"}     # 고정 문구의 숫자: '25개 구', '3D'
+NUM = re.compile(r"\d+(?:[.,]\d+)*")
+
+
+def slug_for(end_ym: str) -> str:
+    return f"seoul-3d-{end_ym}"
+
+
+def script(facts: dict, post_url: str) -> dict:
+    """대본·제목·설명. 수치는 facts 문자열(top1/low1, 기간)만 그대로 넣는다 (Claude를 부르지 않는 고정 틀)."""
+    f = facts
+    narration = (f"{f['start_month']}부터 {f['end_month']}까지, 서울 25개 구 아파트 평당 중위가를 3D 지도로 봅니다. "
+                 f"{f['end_month']} 기준 가장 높은 곳은 {f['top1_gu']}, 평당 {f['top1_ppp']}. "
+                 f"가장 낮은 곳은 {f['low1_gu']}, 평당 {f['low1_ppp']}입니다. 구별 자세한 표는 블로그에 있습니다.")
+    title = f"서울 25개 구 평당 중위가 월별 변화 3D 지도 ({f['end_month']}까지) #Shorts"
+    tags = ["서울아파트", "실거래가", "아파트시세", "평당가격", "부동산데이터"]
+    description = (f"{f['start_month']}~{f['end_month']} 서울 25개 구 아파트 평당(3.3㎡) 중위 거래가격을 "
+                   f"월별 3D 막대 지도로 정리했습니다.\n"
+                   f"{f['end_month']} 기준 최고 {f['top1_gu']} {f['top1_ppp']}, 최저 {f['low1_gu']} {f['low1_ppp']}.\n"
+                   f"기간 중 거래 {f['trade_total']} (해제 거래 제외, 계약월 기준). "
+                   f"거래가 적은 구·월은 값을 비웠습니다. 지도는 구 위치를 칸으로 단순화한 도식입니다.\n\n"
+                   f"구별 상세 표: {post_url}\n"
+                   "자료: 국토교통부 실거래가 공개시스템. 정보 제공 목적이며 투자 권유가 아닙니다.\n\n"
+                   + " ".join("#" + t for t in tags))
+    return {"narration": narration, "title": title, "description": description, "tags": tags}
+
+
+def check(sc: dict, facts: dict, banned=()) -> list[str]:
+    """화면 밖 글(대본·제목·설명)의 숫자가 모두 facts 또는 고정 문구에서 온 것인지 확인."""
+    allowed = set(FIXED_NUMBERS) | {"3.3"}
+    for v in facts.values():
+        allowed |= set(NUM.findall(str(v)))
+    problems = []
+    for name in ("narration", "title", "description"):
+        text = sc[name].split("http")[0] if name == "description" else sc[name]
+        for num in NUM.findall(text):
+            if num not in allowed:
+                problems.append(f"{name}: 근거 없는 숫자 '{num}'")
+        for phrase in banned:
+            if phrase in sc[name]:
+                problems.append(f"{name}: 금지 표현 '{phrase}'")
+    return problems
+
+
+def produce_monthly(conn, cfg, out_dir: Path, today: date | None = None) -> str | None:
+    """이번 달 타임랩스를 아직 안 만들었으면 렌더하고 videos 에 'rendered'로 넣는다 (업로드는 기존 흐름이 처리).
+
+    끝 달이 매달 한 번 바뀌므로 한 달에 한 편만 만들어진다. 이미 있으면 None.
+    """
+    import json
+    import shutil
+
+    from . import db, tts
+    end = default_end(today)
+    slug = slug_for(end)
+    if conn.execute("SELECT 1 FROM videos WHERE slug = ?", (slug,)).fetchone():
+        return None
+    data = seoul_facts(conn, end, 12)
+    facts = data["facts"]
+    site = cfg["site"]
+    sc = script(facts, f"{site['base_url']}/")
+    problems = check(sc, facts, cfg["quality"]["banned_phrases"])
+    if problems:
+        db.log_rejection(conn, "video:" + slug, problems)
+        raise ValueError("; ".join(problems[:3]))
+    work = out_dir / f"_{slug}"
+    work.mkdir(parents=True, exist_ok=True)
+    try:
+        s = cfg["shorts"]
+        audio = work / "n.mp3"
+        secs = tts.speak(sc["narration"], audio, s["tts_provider"], s["voice"])
+        if secs + 0.8 > s["max_seconds"]:
+            raise ValueError(f"내레이션 {secs:.1f}초가 너무 김")
+        res = render(conn, out_dir / f"{slug}.mp4", theme="midnight", site_title=site["title"],
+                     audio=audio, audio_secs=secs, data=data)
+        Timelapse(data, "midnight", site["title"]).frame(1.2).convert("RGB").save(out_dir / f"{slug}.jpg", quality=90)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    ts = db.now_iso()
+    conn.execute(
+        """INSERT OR REPLACE INTO videos (slug, title, description, tags, seconds, status,
+               created_at, updated_at, variant) VALUES (?, ?, ?, ?, ?, 'rendered', ?, ?, ?)""",
+        (slug, sc["title"], sc["description"], json.dumps(sc["tags"], ensure_ascii=False), res["seconds"], ts, ts,
+         json.dumps({"format": "timelapse3d"}, ensure_ascii=False)))
+    conn.commit()
+    return slug
 
 
 def main():

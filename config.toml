@@ -39,6 +39,7 @@ tts_provider = "auto"         # auto(edge → 실패 시 gtts) | edge | gtts | s
 voice = "ko-KR-SunHiNeural"   # edge 음성
 max_seconds = 58
 max_narration_chars = 90      # 장면당 내레이션 최대 글자 수(숫자 채운 뒤)
+timelapse_monthly = true      # 매달 한 번 서울 25개 구 3D 타임랩스 숏폼 (pipeline/timelapse3d.py)
 public_photos = true          # 위키미디어 공용의 허용 라이선스 사진을 배경으로 사용 (출처 자동 표기)
 
 [youtube]

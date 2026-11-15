@@ -136,6 +136,18 @@ def do_shorts(conn, cfg, summary, fake=False, tts_override=None):
         (made if ok else failed).append(p["slug"] if ok else {"slug": p["slug"], "problems": problems[:3]})
         log(f"  {'영상 완성' if ok else '영상 실패'} {p['slug']} {'' if ok else problems[:2]}")
 
+    # 월 1회: 서울 25개 구 3D 타임랩스 (끝 달이 바뀌는 달에 한 편, 실패해도 일반 숏폼은 계속)
+    if cfg["shorts"].get("timelapse_monthly", False) and not fake:
+        from . import timelapse3d
+        try:
+            slug = timelapse3d.produce_monthly(conn, cfg, shorts.VIDEO_DIR)
+            if slug:
+                made.append(slug)
+                log(f"  3D 타임랩스 완성 {slug}")
+        except Exception as e:
+            failed.append({"slug": "seoul-3d", "problems": [f"{type(e).__name__}: {e}"[:300]]})
+            log(f"  3D 타임랩스 실패: {e}")
+
     uploaded = []
     if can_upload:
         for v in conn.execute("SELECT * FROM videos WHERE status IN ('rendered','upload_failed')").fetchall():
@@ -192,7 +204,9 @@ def do_instagram(conn, cfg, summary):
             log(f"  Instagram 건너뜀 {v['slug']}: 영상 파일이 배포본에 없음")
             continue
         try:
-            mid = instagram.publish_reel(url, instagram.caption_for(dict(v), f"{base}/posts/{v['slug']}/"))
+            has_post = conn.execute("SELECT 1 FROM posts WHERE slug = ?", (v["slug"],)).fetchone()
+            post_url = f"{base}/posts/{v['slug']}/" if has_post else f"{base}/"   # 3D 타임랩스처럼 글이 없는 영상
+            mid = instagram.publish_reel(url, instagram.caption_for(dict(v), post_url))
             status, err = "posted", None
             posted.append(mid)
             log(f"  Instagram 릴스 게시 {v['slug']} → {mid}")
