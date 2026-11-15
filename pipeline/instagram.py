@@ -1,11 +1,11 @@
-"""Instagram 릴스 게시 (Instagram API with Instagram Login, 본인 계정 = Standard Access).
+"""Instagram 릴스 게시. 토큰 종류에 따라 두 방식을 지원한다.
 
-필요한 GitHub Secrets
-  IG_ACCESS_TOKEN : Meta 앱 대시보드에서 생성한 장기 토큰 (최초 1회만 사용)
-  IG_STATE_KEY    : 토큰 상태 파일 암호화 키 (scripts/setup_instagram.ps1 이 만들어 등록)
+1) 비즈니스 포트폴리오의 시스템 사용자 토큰 (권장, 만료 없음) → graph.facebook.com
+   GitHub Secrets: IG_ACCESS_TOKEN, IG_USER_ID (게시할 Instagram 계정 ID)
+2) Instagram 로그인 토큰 ("IG"로 시작, 60일 만료) → graph.instagram.com
+   GitHub Secrets: IG_ACCESS_TOKEN, IG_STATE_KEY. 갱신된 토큰은 공개 저장소에 그대로 둘 수 없으므로
+   IG_STATE_KEY 로 암호화해 data/ig_state.enc 에 저장한다.
 
-장기 토큰은 60일 뒤 만료되고, 갱신하면 새 토큰이 나온다. 새 토큰은 공개 저장소에 그대로 둘 수 없으므로
-IG_STATE_KEY 로 암호화해 data/ig_state.enc 에 저장한다.
 영상은 GitHub Pages(public/media/)에 먼저 배포된 뒤 그 URL로 게시한다 (Instagram이 URL에서 가져감).
 """
 import json
@@ -18,6 +18,7 @@ import requests
 from .config import DATA_DIR
 
 GRAPH = "https://graph.instagram.com"
+FB_GRAPH = "https://graph.facebook.com"
 STATE = DATA_DIR / "ig_state.enc"
 REFRESH_AFTER = timedelta(days=3)  # 갱신은 발급 24시간 이후 가능, 60일 안에 해야 함
 
@@ -26,7 +27,15 @@ class InstagramError(RuntimeError):
     pass
 
 
+def _business_mode() -> bool:
+    """시스템 사용자(페이스북 그래프) 토큰이면 True. Instagram 로그인 토큰은 'IG'로 시작한다."""
+    tok = os.environ.get("IG_ACCESS_TOKEN", "")
+    return bool(tok) and not tok.startswith("IG") and bool(os.environ.get("IG_USER_ID"))
+
+
 def configured() -> bool:
+    if _business_mode():
+        return True
     return bool(os.environ.get("IG_STATE_KEY")) and (STATE.exists() or bool(os.environ.get("IG_ACCESS_TOKEN")))
 
 
@@ -75,13 +84,16 @@ def token() -> str:
 
 
 def publish_reel(video_url: str, caption: str, wait_seconds: int = 600) -> str:
-    tok = token()
-    me = requests.get(f"{GRAPH}/me", params={"fields": "user_id,username", "access_token": tok}, timeout=30)
-    if me.status_code != 200:
-        raise InstagramError(f"계정 조회 실패: {_err(me)}")
-    ig_id = me.json()["user_id"]
+    if _business_mode():
+        graph, tok, ig_id = FB_GRAPH, os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
+    else:
+        graph, tok = GRAPH, token()
+        me = requests.get(f"{GRAPH}/me", params={"fields": "user_id,username", "access_token": tok}, timeout=30)
+        if me.status_code != 200:
+            raise InstagramError(f"계정 조회 실패: {_err(me)}")
+        ig_id = me.json()["user_id"]
 
-    c = requests.post(f"{GRAPH}/{ig_id}/media", timeout=60, data={
+    c = requests.post(f"{graph}/{ig_id}/media", timeout=60, data={
         "media_type": "REELS", "video_url": video_url, "caption": caption[:2200],
         "share_to_feed": "true", "access_token": tok})
     if c.status_code != 200:
@@ -90,7 +102,7 @@ def publish_reel(video_url: str, caption: str, wait_seconds: int = 600) -> str:
 
     deadline = time.time() + wait_seconds
     while True:
-        s = requests.get(f"{GRAPH}/{cid}", params={"fields": "status_code,status", "access_token": tok}, timeout=30)
+        s = requests.get(f"{graph}/{cid}", params={"fields": "status_code,status", "access_token": tok}, timeout=30)
         code = s.json().get("status_code") if s.status_code == 200 else None
         if code == "FINISHED":
             break
@@ -100,7 +112,7 @@ def publish_reel(video_url: str, caption: str, wait_seconds: int = 600) -> str:
             raise InstagramError("영상 처리 시간 초과")
         time.sleep(30)
 
-    p = requests.post(f"{GRAPH}/{ig_id}/media_publish", timeout=60,
+    p = requests.post(f"{graph}/{ig_id}/media_publish", timeout=60,
                       data={"creation_id": cid, "access_token": tok})
     if p.status_code != 200:
         raise InstagramError(f"게시 실패: {_err(p)}")

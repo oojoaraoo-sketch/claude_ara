@@ -162,6 +162,34 @@ class InstagramTest(unittest.TestCase):
             self.assertEqual(instagram._load()["token"], "NEWTOKEN")
 
 
+class InstagramBusinessTest(unittest.TestCase):
+    def test_system_user_token_uses_facebook_graph(self):
+        import os
+        from unittest import mock
+        from pipeline import instagram
+        calls = []
+
+        def resp(data):
+            return mock.Mock(status_code=200, json=mock.Mock(return_value=data))
+
+        def post(url, **k):
+            calls.append(url)
+            return resp({"id": "C1"} if url.endswith("/media") else {"id": "M9"})
+
+        def get(url, **k):
+            calls.append(url)
+            return resp({"status_code": "FINISHED"})
+
+        with mock.patch.dict(os.environ, {"IG_ACCESS_TOKEN": "EAAxxxx", "IG_USER_ID": "1784"}, clear=False), \
+                mock.patch.dict(os.environ, {"IG_STATE_KEY": ""}), \
+                mock.patch.object(instagram.requests, "get", get), \
+                mock.patch.object(instagram.requests, "post", post):
+            self.assertTrue(instagram.configured())
+            self.assertEqual(instagram.publish_reel("https://x/v.mp4", "cap"), "M9")
+        self.assertTrue(all(u.startswith("https://graph.facebook.com/") for u in calls))
+        self.assertIn("https://graph.facebook.com/1784/media", calls)
+
+
 class WriterTest(unittest.TestCase):
     def test_parse_json_fallback(self):
         from pipeline.write import _parse_json

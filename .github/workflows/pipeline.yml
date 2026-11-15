@@ -117,6 +117,7 @@ jobs:
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_STATE_KEY: ${{ secrets.IG_STATE_KEY }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
           SITE_BASE_URL: ${{ vars.SITE_BASE_URL }}
         run: |
           set +e
