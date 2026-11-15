@@ -34,7 +34,8 @@
 
 GitHub가 매일 새벽 6시에 파이프라인을 대신 돌려 주고, 블로그도 무료로 호스팅해 줍니다.
 
-1. https://github.com 가입(무료, Free 플랜). 아이디는 블로그 주소에 들어갑니다 (`아이디.github.io`).
+1. https://github.com 가입(무료, Free 플랜). 개인 아이디가 블로그 주소에 드러나지 않도록 저장소는 무료 조직
+   `silgeorae-report` 아래 `silgeorae-report.github.io` 이름으로 둡니다 → 블로그 주소 `https://silgeorae-report.github.io/`.
 2. Claude에게 "GitHub 가입했어"라고 알려 주세요. Claude가 GitHub CLI를 설치하고 저장소 만들기·코드 올리기를 진행합니다.
    - 중간에 `gh auth login` 화면이 나오면 브라우저에서 GitHub 로그인 → 화면의 8자리 코드 입력 → 승인만 해 주시면 됩니다.
 
@@ -56,11 +57,11 @@ GitHub가 매일 새벽 6시에 파이프라인을 대신 돌려 주고, 블로�
 
    | Name | Value |
    |---|---|
-   | `SITE_BASE_URL` | `https://아이디.github.io/claude_ara` |
+   | `SITE_BASE_URL` | `https://silgeorae-report.github.io` |
 
 4. 왼쪽 메뉴 **Pages** → **Source**를 **GitHub Actions** 로 선택.
 5. 위쪽 **Actions** 탭 → (처음이면 "I understand… enable" 버튼) → 왼쪽 **daily-pipeline** → 오른쪽 **Run workflow** → 초록 버튼.
-6. 10~30분 뒤 초록 체크가 뜨면 `https://아이디.github.io/claude_ara` 에서 블로그를 확인합니다.
+6. 10~30분 뒤 초록 체크가 뜨면 `https://silgeorae-report.github.io` 에서 블로그를 확인합니다.
    빨간 X가 뜨면 GitHub가 이메일을 보내고, Claude에게 "Actions 실패했어"라고 알려 주시면 원인을 찾아 고칩니다.
 
 이후로는 매일 새벽 6시에 자동으로 돌아갑니다.

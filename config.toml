@@ -6,7 +6,7 @@
 [site]
 title = "실거래가 리포트"
 tagline = "국토교통부 공개 데이터로 매일 갱신하는 서울 아파트 실거래 분석"
-base_url = "https://oojoaraoo-sketch.github.io/claude_ara"   # 무료 GitHub Pages 주소 (Variables의 SITE_BASE_URL이 우선)
+base_url = "https://silgeorae-report.github.io"   # 무료 GitHub Pages 주소 (Variables의 SITE_BASE_URL이 우선)
 language = "ko"
 author = "실거래가 리포트 편집팀"
 contact_email = ""                 # 소개/개인정보 페이지에 노출 (애드센스 심사에 필요)

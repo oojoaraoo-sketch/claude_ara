@@ -1,7 +1,7 @@
 ﻿# Instagram 토큰을 GitHub Secrets에 등록한다. 값은 화면에 표시되지 않는다.
 # 사용법: Meta 앱 대시보드에서 생성한 Instagram 액세스 토큰을 Ctrl+C 복사 → 이 스크립트 실행
 $gh = "C:\Program Files\GitHub CLI\gh.exe"
-$repo = "oojoaraoo-sketch/claude_ara"
+$repo = "silgeorae-report/silgeorae-report.github.io"
 $root = Split-Path $PSScriptRoot -Parent
 
 $tok = (Get-Clipboard -Raw)

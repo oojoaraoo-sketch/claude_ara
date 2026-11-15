@@ -7,5 +7,5 @@ if ($key.Length -lt 20 -or $key -match "\s") {
     Write-Host "클립보드에 인증키가 없습니다. 인증키(Decoding)를 Ctrl+C로 복사한 뒤 다시 실행하세요."
     exit 1
 }
-$key | & "C:\Program Files\GitHub CLI\gh.exe" secret set DATA_GO_KR_KEY --repo oojoaraoo-sketch/claude_ara
+$key | & "C:\Program Files\GitHub CLI\gh.exe" secret set DATA_GO_KR_KEY --repo silgeorae-report/silgeorae-report.github.io
 if ($LASTEXITCODE -eq 0) { Write-Host "등록 완료 (길이 $($key.Length)자, 앞 4자리 $($key.Substring(0,4))…)" }
