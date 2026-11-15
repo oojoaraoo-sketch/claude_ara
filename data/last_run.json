@@ -5,45 +5,68 @@
   "collected_new": 0,
   "collect_errors": [],
   "published": [
-    "seoul-seodaemun-2026-10",
-    "seoul-yeongdeungpo-2026-10",
-    "seoul-yangcheon-2026-10",
-    "seoul-gangbuk-2026-10",
-    "seoul-mapo-2026-10",
-    "seoul-dongjak-2026-10"
+    "seoul-seongbuk-2026-10",
+    "seoul-jungnang-2026-10",
+    "seoul-geumcheon-2026-10",
+    "seoul-seongdong-2026-10",
+    "seoul-gwangjin-2026-10",
+    "seoul-jung-2026-10",
+    "seoul-yongsan-2026-10"
   ],
   "rejected": [
     {
-      "slug": "seoul-seongbuk-2026-10",
+      "slug": "seoul-seocho-2026-10",
       "problems": [
-        "2차 검수: 조사 오류: '최고가 단지가 있는 길음동와는 다른 동입니다' → 받침 있는 '동' 뒤이므로 '길음동과는'으로 고쳐야 함.",
-        "2차 검수: 참고(승인 여부와 무관): 지시된 마커 [[CHART]], [[TABLE:top10]] 대신 이미지 경로와 표가 본문에 바로 들어가 있음. 렌더링 단계에서 의도한 것인지 확인 필요."
-      ]
-    },
-    {
-      "slug": "seoul-jungnang-2026-10",
-      "problems": [
-        "2차 검수: 수치 해석 오류: '거래의 절반 가까이가 소형 아파트였다는 뜻'은 틀린 해석입니다. small_share 51.8%는 절반을 넘는 수치이므로 '절반을 조금 넘는(절반 남짓)' 등으로 고쳐야 합니다.",
-        "2차 검수: 조사 오류: '이번 달 전체 거래가 141건라는 점'을 '141건이라는 점'으로 고쳐야 합니다."
+        "2차 검수: '소형 면적대(전용 60㎡ 이하) 비중은 38.6%였습니다. 중대형 거래가 더 많았다는 뜻' — 나머지 61.4%는 전용 60㎡ 초과 전체이며, 통상 60~85㎡는 중소형, 85㎡ 초과가 중대형으로 분류되므로 '중대형 거래가 더 많았다'는 사실과 다르고 facts로 뒷받침되지 않음. '전용 60㎡를 넘는 거래가 61.4%로 더 많았다' 등으로 수정 필요."
       ]
     }
   ],
   "usage": {
-    "input_tokens": 4,
-    "output_tokens": 1923,
+    "input_tokens": 6,
+    "output_tokens": 2732,
     "cache_read_input_tokens": 3256,
-    "calls": 2
+    "calls": 3
+  },
+  "learn": {
+    "collected": {
+      "youtube": 8,
+      "tiktok": 0
+    },
+    "scored": 0,
+    "weights": {
+      "theme": {
+        "midnight": 1.0,
+        "ember": 1.0,
+        "paper": 1.0,
+        "forest": 1.0
+      },
+      "hook": {
+        "question": 1.0,
+        "number": 1.0,
+        "contrast": 1.0
+      },
+      "photo": {
+        "on": 1.0,
+        "off": 1.0
+      }
+    },
+    "samples": {
+      "theme": {},
+      "hook": {},
+      "photo": {}
+    },
+    "lessons": []
   },
   "shorts": {
     "made": [
-      "seoul-gwanak-2026-10",
-      "seoul-seodaemun-2026-10"
+      "seoul-seongbuk-2026-10",
+      "seoul-jungnang-2026-10"
     ],
     "failed": [],
     "uploaded": [
-      "ZFdWJeQ2qzc",
-      "Z9YibZQ5i20"
+      "8Ia1cx8YnXo",
+      "z9g9phT_vaU"
     ]
   },
-  "site_posts": 14
+  "site_posts": 21
 }
