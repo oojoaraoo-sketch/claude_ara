@@ -66,7 +66,48 @@ def check(kind: str, draft: dict, facts: dict, cfg: dict) -> list[str]:
     return problems
 
 
+# 플레이스홀더 바로 뒤의 조사를 값의 받침에 맞게 고른다 (예: "404건였습니다" → "404건이었습니다")
+# (받침 있을 때, 받침 없을 때). 긴 것부터 검사.
+JOSA = [("이었", "였"), ("이라", "라"), ("이며", "며"), ("이나", "나"), ("으로", "로"),
+        ("이", "가"), ("은", "는"), ("을", "를"), ("과", "와")]
+_JOSA_RE = re.compile(
+    r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}(" + "|".join(sorted({j for p in JOSA for j in p}, key=len, reverse=True))
+    + r")(?![가-힣])|\{\{\s*([a-zA-Z0-9_]+)\s*\}\}(이었|였|으로|로)")
+_DIGIT_JONG = {"0": 1, "1": 8, "2": 0, "3": 1, "4": 0, "5": 0, "6": 1, "7": 8, "8": 8, "9": 0}
+
+
+def _jong(value: str) -> int:
+    """마지막 글자의 받침: 0=없음, 8=ㄹ, 그 밖=있음."""
+    s = re.sub(r"[\s)\]}'\".,·]+$", "", value)
+    if not s:
+        return 0
+    c = s[-1]
+    if "가" <= c <= "힣":
+        return (ord(c) - 0xAC00) % 28
+    if c.isdigit():
+        return _DIGIT_JONG[c]
+    if c.lower() == "l":
+        return 8
+    if c.lower() in "mn":
+        return 1
+    return 0
+
+
+def _pick(josa: str, jong: int) -> str:
+    for with_b, without_b in JOSA:
+        if josa in (with_b, without_b):
+            if with_b == "으로":  # ㄹ 받침은 "로"
+                return "로" if jong in (0, 8) else "으로"
+            return with_b if jong else without_b
+    return josa
+
+
 def fill(text: str, facts: dict) -> str:
+    def josa(m):
+        key = m.group(1) or m.group(3)
+        val = str(facts[key])
+        return val + _pick(m.group(2) or m.group(4), _jong(val))
+    text = _JOSA_RE.sub(josa, text)
     return PLACEHOLDER.sub(lambda m: str(facts[m.group(1)]), text)
 
 

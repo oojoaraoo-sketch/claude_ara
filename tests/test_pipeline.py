@@ -69,6 +69,14 @@ class QATest(unittest.TestCase):
         p = qa.check("gu_monthly", self.draft("지금 사야 합니다."), self.facts, self.cfg)
         self.assertTrue(any("금지" in x for x in p))
 
+    def test_josa(self):
+        f = {"a": "404건", "b": "6억 7,000만원", "c": "상계동", "d": "6층", "e": "15건", "f": "노원구", "g": "3.2%",
+             "h": "서울"}
+        self.assertEqual(qa.fill("{{a}}였습니다 {{a}}와 {{b}}로 {{c}}와 {{d}}로 {{e}}가", f),
+                         "404건이었습니다 404건과 6억 7,000만원으로 상계동과 6층으로 15건이")
+        self.assertEqual(qa.fill("{{f}}이 {{f}}은 {{g}}로 {{h}}으로 {{f}}이번", f),
+                         "노원구가 노원구는 3.2%로 서울로 노원구이번")
+
     def test_render_fills(self):
         out = qa.render(self.draft("거래 {{trade_count}}"), self.facts, {"top10": "|a|"}, "/c.png", "alt")
         self.assertIn("거래 120건", out["body_md"])
