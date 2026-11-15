@@ -17,7 +17,13 @@ import requests
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
-SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+ANALYTICS_URL = "https://youtubeanalytics.googleapis.com/v2/reports"
+# 업로드 + 내 채널 통계 읽기 + 분석(시청 지속률). 읽기 권한은 성과 학습(learn.py)에 쓴다.
+SCOPE = " ".join([
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
+])
 
 
 class YouTubeError(RuntimeError):
@@ -62,6 +68,26 @@ def upload(path, title: str, description: str, tags: list[str], privacy: str, ca
     if r.status_code not in (200, 201):
         raise YouTubeError(f"업로드 실패 {r.status_code}: {r.text[:300]}")
     return r.json()["id"]
+
+
+def analytics(video_ids: list[str], start: str, end: str) -> dict:
+    """영상별 시청 지표. {video_id: {views, avg_view_pct, avg_view_sec, likes, shares, subs}}
+    분석 권한이 없는 토큰이면 YouTubeError."""
+    token = access_token()
+    out = {}
+    for i in range(0, len(video_ids), 200):
+        ids = video_ids[i:i + 200]
+        r = requests.get(ANALYTICS_URL, timeout=60, headers={"Authorization": f"Bearer {token}"}, params={
+            "ids": "channel==MINE", "startDate": start, "endDate": end, "dimensions": "video",
+            "metrics": "views,averageViewPercentage,averageViewDuration,likes,shares,subscribersGained",
+            "filters": "video==" + ",".join(ids), "maxResults": 200})
+        if r.status_code != 200:
+            raise YouTubeError(f"분석 조회 실패 {r.status_code}: {r.text[:200]}")
+        for row in r.json().get("rows", []) or []:
+            vid, views, pct, sec, likes, shares, subs = row
+            out[vid] = {"views": int(views), "avg_view_pct": float(pct), "avg_view_sec": float(sec),
+                        "likes": int(likes), "shares": int(shares), "subs": int(subs)}
+    return out
 
 
 def _client_from_json() -> tuple[str, str, str]:

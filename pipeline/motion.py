@@ -297,7 +297,9 @@ class Scene:
     # ------------------------------------------------------------ 프레임
 
     def frame(self, t: float, progress: float) -> Image.Image:
-        if self.photo_bg is not None:
+        if isinstance(self.photo_bg, ClipBackground):
+            fr = self.photo_bg.next()
+        elif self.photo_bg is not None:
             pan = int((self.photo_bg.width - W) * min(1.0, t / max(self.seconds, 0.1)))
             fr = self.photo_bg.crop((pan, 0, pan + W, H))
         else:
@@ -343,6 +345,53 @@ def render_scene(scene: Scene, audio: Path, out: Path, t_offset: float, total: f
         pass
     if proc.wait() != 0:
         raise RuntimeError("ffmpeg 인코딩 실패")
+
+
+class ClipBackground:
+    """스톡 영상 클립을 세로 화면 크기로 잘라 어둡게 만든 뒤 프레임을 차례로 준다 (끝나면 처음부터)."""
+
+    def __init__(self, path: Path):
+        self.path = Path(path)
+        self.proc = None
+        self.frames_read = 0
+
+    def _open(self):
+        self.proc = subprocess.Popen([
+            FFMPEG, "-loglevel", "error", "-i", str(self.path), "-an",
+            "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},"
+                   "eq=brightness=-0.22:saturation=0.75,gblur=sigma=2",
+            "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE)
+
+    def next(self) -> Image.Image:
+        size = W * H * 3
+        for _ in range(2):
+            if self.proc is None:
+                self._open()
+            buf = self.proc.stdout.read(size)
+            if len(buf) == size:
+                self.frames_read += 1
+                return Image.frombytes("RGB", (W, H), buf)
+            self.close()
+            if self.frames_read == 0:
+                break
+        raise RuntimeError("배경 클립을 읽을 수 없음")
+
+    def close(self):
+        if self.proc:
+            self.proc.kill()
+            self.proc.wait()
+            self.proc = None
+
+
+def load_clip(path):
+    if not path or not Path(path).exists():
+        return None
+    try:
+        c = ClipBackground(Path(path))
+        c.next()
+        return c
+    except Exception:
+        return None
 
 
 def load_photo(path: Path | None, theme: dict):

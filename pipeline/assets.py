@@ -10,6 +10,7 @@
 """
 import html
 import json
+import os
 import re
 from pathlib import Path
 
@@ -142,6 +143,83 @@ def region_photo(conn, writer, region: str, out_dir: Path) -> tuple[Path | None,
     short = f"사진: {row['artist']} / {row['license']}"
     full = f"배경 사진: {row['artist']}, {row['license']}, Wikimedia Commons ({row['page_url']})"
     return path, short, full
+
+
+# ---------------------------------------------------------------- 무료 스톡 영상 (Pexels / Pixabay)
+# 두 서비스 모두 자체 라이선스로 상업적 사용·편집 허용, 출처 표기는 선택이지만 우리는 항상 표기한다.
+# 인물이 주제인 클립을 피하려고 도시 풍경 검색어만 쓴다. 키가 없으면 조용히 건너뛴다.
+STOCK_QUERIES = ["seoul skyline", "seoul city night", "seoul apartment", "han river seoul", "korea city aerial",
+                 "seoul aerial", "city traffic night", "apartment buildings"]
+
+
+def _pexels(query: str) -> list[dict]:
+    key = os.environ.get("PEXELS_API_KEY", "").strip()
+    if not key:
+        return []
+    r = requests.get("https://api.pexels.com/videos/search", timeout=30, headers={"Authorization": key},
+                     params={"query": query, "orientation": "portrait", "per_page": 15, "size": "medium"})
+    if r.status_code != 200:
+        return []
+    out = []
+    for v in r.json().get("videos", []):
+        files = [f for f in v.get("video_files", []) if f.get("file_type") == "video/mp4"
+                 and (f.get("height") or 0) >= 1280 and (f.get("height") or 0) <= 2400
+                 and (f.get("height") or 0) > (f.get("width") or 0)]
+        if not files or not (6 <= v.get("duration", 0) <= 60):
+            continue
+        f = min(files, key=lambda x: x["height"])
+        out.append({"source": "pexels", "id": str(v["id"]), "file_url": f["link"], "page_url": v.get("url", ""),
+                    "artist": (v.get("user") or {}).get("name", "Pexels"), "license": "Pexels License",
+                    "title": query})
+    return out
+
+
+def _pixabay(query: str) -> list[dict]:
+    key = os.environ.get("PIXABAY_API_KEY", "").strip()
+    if not key:
+        return []
+    r = requests.get("https://pixabay.com/api/videos/", timeout=30,
+                     params={"key": key, "q": query, "per_page": 20, "safesearch": "true"})
+    if r.status_code != 200:
+        return []
+    out = []
+    for v in r.json().get("hits", []):
+        vids = v.get("videos", {})
+        f = vids.get("medium") or vids.get("small")
+        if not f or not f.get("url") or not (6 <= v.get("duration", 0) <= 60):
+            continue
+        out.append({"source": "pixabay", "id": str(v["id"]), "file_url": f["url"], "page_url": v.get("pageURL", ""),
+                    "artist": v.get("user", "Pixabay"), "license": "Pixabay Content License", "title": query})
+    return out
+
+
+def stock_clip(conn, slug: str, out_dir: Path) -> tuple[Path | None, str | None, str | None]:
+    """영상 배경 클립 1개 (slug마다 다른 클립, 같은 클립을 너무 자주 쓰지 않음)."""
+    conn.executescript(SCHEMA)
+    if not (os.environ.get("PEXELS_API_KEY") or os.environ.get("PIXABAY_API_KEY")):
+        return None, None, None
+    import hashlib
+    h = int(hashlib.sha256(slug.encode()).hexdigest()[:8], 16)
+    used = {r[0] for r in conn.execute("SELECT page_url FROM assets WHERE key LIKE 'clip:%'")}
+    try:
+        q = STOCK_QUERIES[h % len(STOCK_QUERIES)]
+        cands = _pexels(q) + _pixabay(q)
+        fresh = [c for c in cands if c["page_url"] not in used] or cands
+        if not fresh:
+            return None, None, None
+        c = fresh[h % len(fresh)]
+        r = requests.get(c["file_url"], headers=UA, timeout=120)
+        r.raise_for_status()
+        path = out_dir / "clip.mp4"
+        path.write_bytes(r.content)
+    except Exception:
+        return None, None, None
+    conn.execute("INSERT OR REPLACE INTO assets VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                 (f"clip:{slug}", c["file_url"], c["page_url"], c["license"], c["artist"], c["title"], "ok",
+                  db.now_iso()))
+    conn.commit()
+    site = "Pexels" if c["source"] == "pexels" else "Pixabay"
+    return path, f"영상: {c['artist']} / {site}", f"배경 영상: {c['artist']}, {c['license']} ({c['page_url']})"
 
 
 def credits(conn) -> list[dict]:

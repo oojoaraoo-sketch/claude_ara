@@ -95,10 +95,16 @@ def produce(conn, cfg, writer, post, out_dir: Path = VIDEO_DIR) -> tuple[bool, l
         # 2) 공개 사진 배경 (실험 변수 photo=on 이고 조건에 맞는 사진이 있을 때만)
         theme = motion.THEMES[variant["theme"]]
         photo, credit_short, credit_full = None, None, None
+        if variant["photo"] == "clip":
+            path, credit_short, credit_full = assets.stock_clip(conn, post["slug"], work)
+            photo = motion.load_clip(path)
+            if photo is None:
+                variant["photo"] = "on"                             # 키가 없거나 실패하면 사진으로
         if variant["photo"] == "on" and s.get("public_photos", True):
             path, credit_short, credit_full = assets.region_photo(conn, writer, facts["region"], work)
             photo = motion.load_photo(path, theme)
-        variant["photo"] = "on" if photo is not None else "off"   # 실제로 쓴 값으로 기록
+        if photo is None:
+            variant["photo"] = "off"                                # 실제로 쓴 값으로 기록
 
         # 3) 장면별 모션 렌더
         segments, offset = [], 0.0
@@ -114,6 +120,8 @@ def produce(conn, cfg, writer, post, out_dir: Path = VIDEO_DIR) -> tuple[bool, l
             segments.append(seg)
             offset += secs
 
+        if isinstance(photo, motion.ClipBackground):
+            photo.close()
         out = out_dir / f"{post['slug']}.mp4"
         render.concat(segments, out)
 

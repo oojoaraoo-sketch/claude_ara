@@ -22,7 +22,7 @@ MIN_SAMPLES = 3
 DIMS = {
     "theme": ["midnight", "ember", "paper", "forest"],
     "hook": ["question", "number", "contrast"],
-    "photo": ["on", "off"],
+    "photo": ["on", "clip", "off"],   # on=공개 사진, clip=무료 스톡 영상, off=그라데이션
 }
 HOOK_GUIDE = {
     "question": "hook 장면은 시청자가 답을 궁금해할 질문으로 시작하세요.",
@@ -77,16 +77,18 @@ def guidance(pb: dict, variant: dict) -> str:
 
 def score(conn) -> dict:
     """slug → 상대 점수(1.0 = 그 채널의 보통). 조회수가 없는 채널은 좋아요+댓글로 본다."""
-    conn.executescript(metrics.SCHEMA)
+    metrics._ensure(conn)
     cutoff = (datetime.now(timezone.utc) - timedelta(days=MIN_AGE_DAYS)).isoformat()
     per_platform: dict = {}
     for r in conn.execute(
-            """SELECT m.slug, m.platform, m.views, m.likes, m.comments FROM metrics m
+            """SELECT m.slug, m.platform, m.views, m.likes, m.comments, m.retention FROM metrics m
                JOIN videos v ON v.slug = m.slug
                WHERE v.created_at <= ? AND m.day = (SELECT MAX(day) FROM metrics x
                                                     WHERE x.slug = m.slug AND x.platform = m.platform)""",
             (cutoff,)):
         val = r["views"] if r["views"] is not None else (r["likes"] or 0) + (r["comments"] or 0)
+        if r["retention"] is not None and r["views"] is not None:
+            val = r["views"] * (0.5 + r["retention"] / 100)   # 끝까지 본 비율이 높을수록 가산
         per_platform.setdefault(r["platform"], {})[r["slug"]] = val
     rel: dict = {}
     for plat, vals in per_platform.items():

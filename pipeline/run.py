@@ -26,7 +26,7 @@ def log(msg: str):
 
 
 SECRET_ENVS = ("DATA_GO_KR_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "IG_ACCESS_TOKEN", "IG_STATE_KEY",
-               "YT_CLIENT_SECRET", "YT_REFRESH_TOKEN", "YT_CLIENT_ID")
+               "YT_CLIENT_SECRET", "YT_REFRESH_TOKEN", "YT_CLIENT_ID", "PEXELS_API_KEY", "PIXABAY_API_KEY")
 
 
 def redact(summary: dict) -> dict:

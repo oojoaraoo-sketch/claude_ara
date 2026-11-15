@@ -7,7 +7,7 @@
 import json
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import requests
 
@@ -28,13 +28,24 @@ CREATE TABLE IF NOT EXISTS metrics (
 """
 
 
+def _ensure(conn):
+    conn.executescript(SCHEMA)
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(metrics)")}
+    if "retention" not in cols:   # YouTube 평균 시청 비율(%) — 분석 권한이 있을 때만
+        conn.execute("ALTER TABLE metrics ADD COLUMN retention REAL")
+    if "shares" not in cols:
+        conn.execute("ALTER TABLE metrics ADD COLUMN shares INTEGER")
+
+
 def _today() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-def _save(conn, slug, platform, views=None, likes=None, comments=None, day=None):
-    conn.execute("INSERT OR REPLACE INTO metrics VALUES (?, ?, ?, ?, ?, ?)",
-                 (slug, platform, day or _today(), views, likes, comments))
+def _save(conn, slug, platform, views=None, likes=None, comments=None, day=None, retention=None, shares=None):
+    _ensure(conn)
+    conn.execute("""INSERT OR REPLACE INTO metrics (slug, platform, day, views, likes, comments, retention, shares)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                 (slug, platform, day or _today(), views, likes, comments, retention, shares))
 
 
 def _int(v):
@@ -51,6 +62,20 @@ def collect_youtube(conn) -> int:
         return 0
     by_id = {r["youtube_id"]: r["slug"] for r in rows}
     got = {}
+    try:  # 0) 분석 API (시청 지속률) — 재동의한 토큰일 때
+        from . import youtube
+        if youtube.configured():
+            end = datetime.now(timezone.utc).date()
+            res = youtube.analytics(list(by_id), (end - timedelta(days=90)).isoformat(), end.isoformat())
+            for vid, m in res.items():
+                _save(conn, by_id[vid], "youtube", m["views"], m["likes"], None,
+                      retention=m["avg_view_pct"], shares=m["shares"])
+                got[vid] = None
+            conn.commit()
+            if got:
+                return len(got)
+    except Exception:
+        got = {}
     try:  # 1) 공식 API (토큰 권한이 통계 조회를 허용할 때)
         from . import youtube
         if youtube.configured():
