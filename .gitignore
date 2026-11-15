@@ -5,3 +5,4 @@ public/
 videos/
 data/demo.db
 .env
+client_secret*.json

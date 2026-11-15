@@ -64,11 +64,35 @@ def upload(path, title: str, description: str, tags: list[str], privacy: str, ca
     return r.json()["id"]
 
 
-def auth_flow():
-    """설치형 앱 OAuth: 브라우저 로그인 → 리프레시 토큰 출력."""
+def _client_from_json() -> tuple[str, str, str]:
+    """다운로드 폴더의 최신 client_secret_*.json 에서 클라이언트 정보를 읽는다."""
+    from pathlib import Path
+    files = sorted(Path.home().joinpath("Downloads").glob("client_secret_*.json"),
+                   key=lambda p: p.stat().st_mtime)
+    if not files:
+        sys.exit("다운로드 폴더에 client_secret_*.json 파일이 없습니다. Google Cloud에서 JSON을 다운로드하세요.")
+    data = json.loads(files[-1].read_text(encoding="utf-8"))
+    info = data.get("installed") or data.get("web") or {}
+    return info["client_id"], info["client_secret"], str(files[-1])
+
+
+def _gh_secret(repo: str, name: str, value: str):
+    import subprocess
+    gh = r"C:\Program Files\GitHub CLI\gh.exe" if os.name == "nt" else "gh"
+    subprocess.run([gh, "secret", "set", name, "--repo", repo], input=value, text=True, check=True,
+                   capture_output=True)
+
+
+def auth_flow(repo: str | None = None):
+    """설치형 앱 OAuth: 브라우저 로그인 → 리프레시 토큰.
+
+    repo 를 주면 세 값을 GitHub Secrets에 바로 등록하고 화면에는 출력하지 않는다.
+    """
     cid, secret = os.environ.get("YT_CLIENT_ID"), os.environ.get("YT_CLIENT_SECRET")
+    src = "환경변수"
     if not (cid and secret):
-        sys.exit("먼저 YT_CLIENT_ID, YT_CLIENT_SECRET 환경변수를 설정하세요.")
+        cid, secret, src = _client_from_json()
+    print(f"OAuth 클라이언트 정보: {src}")
     port, state = 8765, secrets.token_urlsafe(16)
     redirect = f"http://127.0.0.1:{port}/"
     result = {}
@@ -97,12 +121,23 @@ def auth_flow():
     r = requests.post(TOKEN_URL, timeout=30, data={
         "code": result["code"], "client_id": cid, "client_secret": secret,
         "redirect_uri": redirect, "grant_type": "authorization_code"})
-    r.raise_for_status()
-    print("\nYT_REFRESH_TOKEN (GitHub Secrets에 저장, 다른 곳에 공유 금지):\n" + r.json()["refresh_token"])
+    if r.status_code != 200:
+        sys.exit(f"토큰 발급 실패 HTTP {r.status_code}")
+    refresh = r.json().get("refresh_token")
+    if not refresh:
+        sys.exit("리프레시 토큰이 오지 않았습니다. 다시 실행하세요.")
+    if repo:
+        for name, val in (("YT_CLIENT_ID", cid), ("YT_CLIENT_SECRET", secret), ("YT_REFRESH_TOKEN", refresh)):
+            _gh_secret(repo, name, val)
+            print(f"✓ GitHub Secret 등록: {name}")
+        print("완료. 다운로드한 client_secret JSON 파일은 지워도 됩니다.")
+    else:
+        print("\nYT_REFRESH_TOKEN (GitHub Secrets에 저장, 다른 곳에 공유 금지):\n" + refresh)
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["auth"]:
-        auth_flow()
+    args = sys.argv[1:]
+    if args[:1] == ["auth"]:
+        auth_flow(args[2] if len(args) >= 3 and args[1] == "--to-github" else None)
     else:
         print(__doc__)
