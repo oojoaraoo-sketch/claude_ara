@@ -27,9 +27,20 @@ class InstagramError(RuntimeError):
     pass
 
 
+def _clean(value: str) -> str:
+    """Windows에서 등록한 비밀값의 끝 줄바꿈·BOM·따옴표를 없앤다 (str.strip은 BOM을 못 지움)."""
+    return value.strip().strip("﻿").strip().strip("'\"").strip()
+
+
+def _shape(tok: str) -> str:
+    """토큰 값을 드러내지 않고 모양만 설명한다 (진단용)."""
+    odd = sum(1 for ch in tok if not ch.isascii() or not ch.isalnum())
+    return f"길이 {len(tok)}자, 영숫자 아닌 문자 {odd}개"
+
+
 def _business_mode() -> bool:
     """시스템 사용자(페이스북 그래프) 토큰이면 True. Instagram 로그인 토큰은 'IG'로 시작한다."""
-    tok = os.environ.get("IG_ACCESS_TOKEN", "").strip()
+    tok = _clean(os.environ.get("IG_ACCESS_TOKEN", ""))
     return bool(tok) and not tok.startswith("IG") and bool(os.environ.get("IG_USER_ID", "").strip())
 
 
@@ -86,7 +97,7 @@ def token() -> str:
 def publish_reel(video_url: str, caption: str, wait_seconds: int = 600) -> str:
     if _business_mode():
         # Windows에서 등록한 비밀값에는 끝에 \r\n 이 붙을 수 있음
-        graph, tok, ig_id = FB_GRAPH, os.environ["IG_ACCESS_TOKEN"].strip(), os.environ["IG_USER_ID"].strip()
+        graph, tok, ig_id = FB_GRAPH, _clean(os.environ["IG_ACCESS_TOKEN"]), _clean(os.environ["IG_USER_ID"])
     else:
         graph, tok = GRAPH, token()
         me = requests.get(f"{GRAPH}/me", params={"fields": "user_id,username", "access_token": tok}, timeout=30)
@@ -98,7 +109,7 @@ def publish_reel(video_url: str, caption: str, wait_seconds: int = 600) -> str:
         "media_type": "REELS", "video_url": video_url, "caption": caption[:2200],
         "share_to_feed": "true", "access_token": tok})
     if c.status_code != 200:
-        raise InstagramError(f"컨테이너 생성 실패: {_err(c)}")
+        raise InstagramError(f"컨테이너 생성 실패: {_err(c)} (토큰 {_shape(tok)})")
     cid = c.json()["id"]
 
     deadline = time.time() + wait_seconds

@@ -22,8 +22,8 @@ try {
     exit 1
 }
 
-$tok | & $gh secret set IG_ACCESS_TOKEN --repo $repo
-$IgUserId | & $gh secret set IG_USER_ID --repo $repo
+& $gh secret set IG_ACCESS_TOKEN --repo $repo --body $tok   # 파이프는 인코딩·줄바꿈이 섞일 수 있음
+& $gh secret set IG_USER_ID --repo $repo --body $IgUserId
 if ($LASTEXITCODE -eq 0) {
     Write-Host "등록 완료: IG_ACCESS_TOKEN (길이 $($tok.Length)자), IG_USER_ID"
     Set-Clipboard -Value " "   # 클립보드에서 토큰 지우기
