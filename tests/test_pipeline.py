@@ -130,6 +130,32 @@ class RedactTest(unittest.TestCase):
         self.assertIn("인증", str(cm.exception))
 
 
+class InstagramTest(unittest.TestCase):
+    def test_token_state_and_publish(self):
+        import os
+        from unittest import mock
+        from cryptography.fernet import Fernet
+        from pipeline import instagram
+
+        def resp(code, data):
+            return mock.Mock(status_code=code, json=mock.Mock(return_value=data))
+
+        gets = {"refresh_access_token": resp(200, {"access_token": "NEWTOKEN"}),
+                "me": resp(200, {"user_id": "123", "username": "x"}),
+                "C1": resp(200, {"status_code": "FINISHED"})}
+        posts = {"media": resp(200, {"id": "C1"}), "media_publish": resp(200, {"id": "M9"})}
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(instagram, "STATE", Path(tmp) / "s.enc"), \
+                mock.patch.dict(os.environ, {"IG_STATE_KEY": Fernet.generate_key().decode(), "IG_ACCESS_TOKEN": "OLD"}), \
+                mock.patch.object(instagram.requests, "get", lambda url, **k: gets[url.rsplit("/", 1)[1]]), \
+                mock.patch.object(instagram.requests, "post", lambda url, **k: posts[url.rsplit("/", 1)[1]]):
+            self.assertTrue(instagram.configured())
+            self.assertEqual(instagram.publish_reel("https://x/v.mp4", "cap"), "M9")
+            raw = instagram.STATE.read_bytes()
+            self.assertNotIn(b"NEWTOKEN", raw)  # 암호화 저장
+            self.assertEqual(instagram._load()["token"], "NEWTOKEN")
+
+
 class WriterTest(unittest.TestCase):
     def test_parse_json_fallback(self):
         from pipeline.write import _parse_json

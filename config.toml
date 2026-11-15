@@ -45,6 +45,11 @@ upload = true                 # YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOK
 privacy = "public"            # 2026-11-02부터 감사 없이도 공개 업로드 가능
 category_id = "27"            # 27=교육 (22=인물/블로그, 25=뉴스/정치)
 
+[instagram]
+enabled = true                # IG_STATE_KEY + (IG_ACCESS_TOKEN 또는 data/ig_state.enc) 가 있을 때만 게시
+max_per_run = 2               # 하루 게시할 릴스 수
+days_back = 3                 # 최근 N일 안에 만든 영상만 게시 (영상 파일은 그날 Pages에만 올라감)
+
 [safety]
 enabled = true                # false 로 바꾸면 생성·발행 즉시 중단 (킬 스위치)
 max_consecutive_failures = 3  # 연속 실패 시 그 실행에서 생성 중단

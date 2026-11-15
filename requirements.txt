@@ -6,3 +6,4 @@ pillow>=10
 imageio-ffmpeg>=0.5
 edge-tts>=7
 gTTS>=2.5
+cryptography>=42

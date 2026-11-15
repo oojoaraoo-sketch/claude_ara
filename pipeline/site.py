@@ -103,6 +103,12 @@ def build(conn, cfg, out=PUBLIC_DIR) -> int:
     if host and not host.endswith("github.io") and host != "example.com":
         write("CNAME", host + "\n")
     (out / ".nojekyll").write_text("")
+    # 이번 실행에서 만든 영상을 공개 URL로 배포 (Instagram이 이 URL에서 영상을 가져감)
+    video_dir = ROOT / "videos"
+    if video_dir.exists():
+        for mp4 in video_dir.glob("*.mp4"):
+            (out / "media").mkdir(exist_ok=True)
+            shutil.copy2(mp4, out / "media" / mp4.name)
     return len(posts)
 
 

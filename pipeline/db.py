@@ -62,6 +62,17 @@ CREATE TABLE IF NOT EXISTS videos (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS social_posts (
+    slug TEXT NOT NULL,              -- videos.slug
+    platform TEXT NOT NULL,          -- instagram
+    status TEXT NOT NULL,            -- posted | failed
+    remote_id TEXT,
+    error TEXT,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (slug, platform)
+);
+
 CREATE TABLE IF NOT EXISTS runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     started_at TEXT NOT NULL,

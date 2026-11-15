@@ -25,7 +25,7 @@ def log(msg: str):
     print(f"[{datetime.now(KST):%H:%M:%S}] {msg}", flush=True)
 
 
-SECRET_ENVS = ("DATA_GO_KR_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY",
+SECRET_ENVS = ("DATA_GO_KR_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "IG_ACCESS_TOKEN", "IG_STATE_KEY",
                "YT_CLIENT_SECRET", "YT_REFRESH_TOKEN", "YT_CLIENT_ID")
 
 
@@ -163,9 +163,54 @@ def do_shorts(conn, cfg, summary, fake=False, tts_override=None):
         raise RuntimeError(f"숏폼 {len(posts)}건 모두 실패")
 
 
+def do_instagram(conn, cfg, summary):
+    """Pages 배포가 끝난 뒤 실행: 최근 영상을 릴스로 게시."""
+    import requests
+
+    from . import instagram
+    ic = cfg.get("instagram", {})
+    if not (cfg["safety"]["enabled"] and ic.get("enabled")):
+        log("Instagram 비활성화 → 건너뜀")
+        return
+    if not instagram.configured():
+        log("Instagram 자격 증명이 없어 건너뜀")
+        return
+    base = cfg["site"]["base_url"].rstrip("/")
+    rows = conn.execute(
+        """SELECT v.* FROM videos v LEFT JOIN social_posts s ON s.slug = v.slug AND s.platform = 'instagram'
+           WHERE (s.status IS NULL OR (s.status = 'failed' AND s.attempts < 3))
+             AND v.created_at >= datetime('now', ?)
+           ORDER BY v.created_at""", (f"-{int(ic.get('days_back', 3))} days",)).fetchall()
+    posted, failed = [], []
+    for v in rows[: int(ic.get("max_per_run", 2))]:
+        url = f"{base}/media/{v['slug']}.mp4"
+        if requests.head(url, timeout=30, allow_redirects=True).status_code != 200:
+            log(f"  Instagram 대기 {v['slug']}: 영상 URL이 아직 없음")
+            continue
+        try:
+            mid = instagram.publish_reel(url, instagram.caption_for(dict(v), f"{base}/posts/{v['slug']}/"))
+            status, err = "posted", None
+            posted.append(mid)
+            log(f"  Instagram 릴스 게시 {v['slug']} → {mid}")
+        except Exception as e:
+            mid, status, err = None, "failed", str(e)[:500]
+            failed.append({"slug": v["slug"], "error": err})
+            log(f"  Instagram 게시 실패 {v['slug']}: {e}")
+        conn.execute(
+            """INSERT INTO social_posts (slug, platform, status, remote_id, error, attempts, updated_at)
+               VALUES (?, 'instagram', ?, ?, ?, 1, ?)
+               ON CONFLICT(slug, platform) DO UPDATE SET status=excluded.status, remote_id=excluded.remote_id,
+                   error=excluded.error, attempts=attempts+1, updated_at=excluded.updated_at""",
+            (v["slug"], status, mid, err, db.now_iso()))
+        conn.commit()
+    summary["instagram"] = {"posted": posted, "failed": failed}
+    if failed and not posted:
+        raise RuntimeError(f"Instagram 게시 {len(failed)}건 모두 실패")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("command", choices=["collect", "generate", "build", "shorts", "all"])
+    ap.add_argument("command", choices=["collect", "generate", "build", "shorts", "all", "instagram"])
     ap.add_argument("--demo", action="store_true", help="가상 데이터 + 가짜 작성기 (별도 DB 사용)")
     ap.add_argument("--fake-writer", action="store_true", help="Claude 대신 가짜 작성기")
     ap.add_argument("--tts", choices=["auto", "edge", "gtts", "silent"], help="TTS 공급자 덮어쓰기")
@@ -198,11 +243,13 @@ def main(argv=None):
                                           tts_override=args.tts))
     if args.command in ("build", "all"):
         stage("build", build)  # 업로드된 영상 ID를 글에 넣기 위해 숏폼 다음에 빌드
+    if args.command == "instagram":  # 'all'에 포함하지 않음: Pages 배포 이후 별도 작업으로 실행
+        stage("instagram", lambda: do_instagram(conn, cfg, summary))
 
     status = "error" if summary["errors"] else "ok"
     summary = redact(summary)
     db.finish_run(conn, run_id, status, summary)
-    if not args.demo:
+    if not args.demo and args.command != "instagram":
         (DATA_DIR / "last_run.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2),
                                                 encoding="utf-8")
     return 0 if status == "ok" else 1
