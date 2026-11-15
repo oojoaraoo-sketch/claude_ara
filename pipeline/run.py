@@ -180,12 +180,16 @@ def do_instagram(conn, cfg, summary):
         """SELECT v.* FROM videos v LEFT JOIN social_posts s ON s.slug = v.slug AND s.platform = 'instagram'
            WHERE (s.status IS NULL OR (s.status = 'failed' AND s.attempts < 3))
              AND v.created_at >= datetime('now', ?)
-           ORDER BY v.created_at""", (f"-{int(ic.get('days_back', 3))} days",)).fetchall()
+           ORDER BY v.created_at DESC""", (f"-{int(ic.get('days_back', 3))} days",)).fetchall()
     posted, failed = [], []
-    for v in rows[: int(ic.get("max_per_run", 2))]:
+    limit = int(ic.get("max_per_run", 2))
+    for v in rows:
+        if len(posted) + len(failed) >= limit:
+            break
         url = f"{base}/media/{v['slug']}.mp4"
+        # 영상 파일은 만든 날의 배포에만 들어가므로, 파일이 없는 예전 영상은 건너뛰고 다음 영상을 시도
         if requests.head(url, timeout=30, allow_redirects=True).status_code != 200:
-            log(f"  Instagram 대기 {v['slug']}: 영상 URL이 아직 없음")
+            log(f"  Instagram 건너뜀 {v['slug']}: 영상 파일이 배포본에 없음")
             continue
         try:
             mid = instagram.publish_reel(url, instagram.caption_for(dict(v), f"{base}/posts/{v['slug']}/"))

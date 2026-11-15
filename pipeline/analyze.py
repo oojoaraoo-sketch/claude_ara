@@ -101,6 +101,7 @@ def gu_monthly(conn, sgg_cd: str, gu_name: str, ym: str, as_of: str) -> dict | N
         "top_floor": f"{top['floor']}층" if top["floor"] is not None else "층 정보 없음",
         "top_price": won(top["price"]),
         "top_date": top["deal_date"],
+        "top_apt_umd": top["umd"],
         "top_umd": umd[0],
         "top_umd_count": f"{umd[1]:,}건",
         "small_share": f"{small:.1f}%",

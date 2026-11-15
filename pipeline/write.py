@@ -121,7 +121,12 @@ KIND_GUIDE = {
         "facts 의미 (해석 주의):\n"
         "- new_high_count: 구 전체에서, 각 단지·전용면적의 기존 최고 거래가를 넘어선 거래 건수 (특정 단지의 건수가 아님)\n"
         "- small_share: 구 전체 거래 중 전용 60㎡ 이하 비중\n"
-        "- top_*: 이번 달 구 전체 최고가 거래 1건 / busy*_apt, busy*_count: 거래 건수 상위 단지와 그 단지의 건수\n"
+        "- top_apt, top_area, top_floor, top_price, top_date, top_apt_umd: 이번 달 구 전체 최고가 거래 1건과 그 단지가 있는 동\n"
+        "- top_umd, top_umd_count: 거래 건수가 가장 많은 동과 그 건수 (최고가 단지의 소재지가 아님! 최고가 단지 소재지는 top_apt_umd)\n"
+        "- yoy_count: 전년 같은 달의 거래 건수 (이번 달 건수가 아님)\n"
+        "- median_ppp: 전용면적 3.3㎡(1평)당 중위 가격 ('㎡당'이 아님)\n"
+        "- 재건축 추진 여부, 브랜드, 학군 등 facts에 없는 단지 특성은 쓰지 마세요.\n"
+        "- busy*_apt, busy*_count: 거래 건수 상위 단지와 그 단지의 건수\n"
         "- 단지명(apt)은 원자료 표기 그대로이며 쉼표가 들어 있어도 하나의 단지입니다. 쉼표로 나눠 두 단지처럼 쓰지 마세요.\n"
         "- facts에 없는 전월 단지별 수치·비중·원인은 추정하지 마세요. 신고가는 '기존 최고가를 넘어선 거래'입니다."
     ),
@@ -226,12 +231,15 @@ class ClaudeWriter:
             "다음 중 하나라도 있으면 approved=false 로 하고 issues에 구체적으로 적으세요: "
             "(1) facts와 모순되는 서술이나 수치 해석 오류(예: 감소를 증가로 표현), "
             "(2) 매수·매도 권유나 가격 전망 단정, (3) 근거 없는 원인 단정, "
-            "(4) 문장이 깨지거나 같은 내용이 반복되어 읽기 어려움, (5) 사실과 다른 일반 상식. "
-            "사소한 문체 취향은 문제로 삼지 마세요."
+            "(4) 문장이 깨지거나 같은 내용이 반복되어 읽기 어려움, (5) 사실과 다른 일반 상식, "
+            "(6) 단위 오류(median_ppp는 3.3㎡=1평당 값이므로 '㎡당'으로 쓰면 오류), "
+            "(7) 표·facts에 없는 단지 특성(재건축 추진 여부, 브랜드, 학군 등)을 근거로 한 단정, "
+            "(8) 동·단지 소재지가 표와 다름, (9) 조사 오류. "
+            "사소한 문체 취향은 문제로 삼지 마세요.\n\n" + KIND_GUIDE["gu_monthly"]
         )
         user = ("facts:\n" + json.dumps(facts, ensure_ascii=False, indent=1)
                 + "\n\n검수할 글:\n" + rendered_md)
-        return self._call(system, user, REVIEW_SCHEMA, "low", 4000)
+        return self._call(system, user, REVIEW_SCHEMA, "medium", 4000)
 
 
 class FakeWriter:

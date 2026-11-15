@@ -37,9 +37,12 @@ def check(kind: str, draft: dict, facts: dict, cfg: dict) -> list[str]:
             if key not in facts:
                 problems.append(f"{name}: 존재하지 않는 플레이스홀더 {{{{{key}}}}}")
         stripped = NON_DATA.sub("", MARKER.sub("", PLACEHOLDER.sub("", text)))
-        for num in DIGITS.findall(stripped):
+        for mt in DIGITS.finditer(stripped):
+            num = mt.group()
             if num not in allowed and num.replace(",", "") not in allowed:
-                problems.append(f"{name}: 근거 없는 숫자 '{num}' 직접 기재")
+                ctx = stripped[max(0, mt.start() - 25): mt.end() + 15].replace("\n", " ").strip()
+                problems.append(f"{name}: 근거 없는 숫자 '{num}' 직접 기재 (문맥: …{ctx}…) "
+                                f"→ facts 플레이스홀더로 바꾸거나 숫자 없이 표현")
 
     body = draft["body_md"]
     markers = MARKER.findall(body)

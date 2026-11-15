@@ -67,13 +67,13 @@ def build_material(conn, job: dict, as_of: str) -> dict | None:
 
 
 def produce(conn, cfg, writer, job: dict, as_of: str) -> tuple[bool, list[str]]:
-    """글 한 편 생성. (성공 여부, 문제 목록) 반환. 한 번은 피드백을 주고 재작성한다."""
+    """글 한 편 생성. (성공 여부, 문제 목록) 반환. 검사·검수 지적을 피드백으로 주고 최대 2번 재작성한다."""
     m = build_material(conn, job, as_of)
     if m is None:
         return False, ["데이터 없음"]
     facts = m["facts"]
     feedback = None
-    for _ in range(2):
+    for _ in range(int(cfg["generate"].get("max_attempts", 3))):
         draft = writer.write(job["kind"], facts, feedback)
         problems = qa.check(job["kind"], draft, facts, cfg)
         if not problems:
