@@ -5,32 +5,45 @@
   "collected_new": 0,
   "collect_errors": [],
   "published": [
-    "seoul-seocho-2026-10",
-    "seoul-jongno-2026-10",
-    "seoul-nowon-2026-09",
-    "seoul-gangseo-2026-09",
-    "seoul-guro-2026-09",
-    "seoul-eunpyeong-2026-09",
-    "seoul-seongbuk-2026-09"
+    "seoul-songpa-2026-09",
+    "seoul-jungnang-2026-09",
+    "seoul-gangnam-2026-09",
+    "seoul-seocho-2026-09",
+    "seoul-dongdaemun-2026-09"
   ],
   "rejected": [
     {
       "slug": "seoul-dobong-2026-09",
       "problems": [
-        "2차 검수: 조사 오류: '창동주공3단지(해등마을)이 14건으로'에서 조사는 괄호 앞말 '단지'(받침 없음)에 맞춰 '창동주공3단지(해등마을)가'로 써야 합니다."
+        "2차 검수: 사실과 다른 서술: 2026년 9월 계약분은 신고 기한(계약 후 30일)이 늦어도 2026-10-30에 끝나, 집계 기준일 2026-11-17에는 이미 지났습니다. 그런데 「시세를 확인할 때 참고할 점」의 '신고 기한이 남아 있어 최근 거래분은 이후 더 반영될 수 있다'와 FAQ 첫 답변의 '신고 기한이 남아 있어 집계 기준일(2026-11-17) 이후 수치가 바뀔 수 있습니다'는 기한이 남은 것처럼 썼습니다. 둘 다 '늦게 들어오는 신고나 해제(취소) 신고로 수치가 바뀔 수 있다'는 식으로 고쳐야 합니다.",
+        "2차 검수: 첫 문단의 '신고가 신청이 늦게 들어오면 수치가 바뀔 수 있습니다'는 틀린 표현입니다. 이 글에서 '신고가'는 기존 최고가를 넘어선 거래를 뜻하므로 거래를 늦게 신고하는 일과 헷갈립니다. '실거래 신고가 늦게 들어오면' 등으로 바꿔야 합니다."
+      ]
+    },
+    {
+      "slug": "seoul-gangdong-2026-09",
+      "problems": [
+        "body: 근거 없는 숫자 '1' 직접 기재 (문맥: …있습니다. 전년 같은 달 자료는 아직 없어서 1년 전과는 비교하지 않았습니…) → facts 플레이스홀더로 바꾸거나 숫자 없이 표현",
+        "근거 없는 표현: '역대 최고' → 신고가는 {{high_since}} 이후 기록 기준일 뿐입니다",
+        "근거 없는 표현: '역대 최고' → 신고가는 {{high_since}} 이후 기록 기준일 뿐입니다"
+      ]
+    },
+    {
+      "slug": "seoul-yeongdeungpo-2026-09",
+      "problems": [
+        "2차 검수: 조사 오류: '당산삼성래미안4차(5건)와 삼환(5건)가 가장 많았고'에서 '삼환'은 받침(ㄴ)으로 끝나므로 '삼환(5건)이 가장 많았고'로 고쳐야 합니다."
       ]
     }
   ],
   "usage": {
     "input_tokens": 4,
-    "output_tokens": 2750,
-    "cache_read_input_tokens": 1628,
+    "output_tokens": 2236,
+    "cache_read_input_tokens": 1663,
     "calls": 2
   },
   "learn": {
     "collected": {
       "youtube": 10,
-      "tiktok": 0
+      "tiktok": 3
     },
     "scored": 0,
     "weights": {
@@ -61,10 +74,15 @@
   "shorts": {
     "made": [
       "seoul-gangnam-2026-10",
-      "seoul-yeongdeungpo-2026-10"
+      "seoul-yeongdeungpo-2026-10",
+      "seoul-3d-202609"
     ],
     "failed": [],
-    "uploaded": []
+    "uploaded": [
+      "aRQwh22j-44",
+      "iD8LEVKU818",
+      "0ZkroXc_7cU"
+    ]
   },
-  "site_posts": 28
+  "site_posts": 33
 }
