@@ -46,7 +46,8 @@
 5. **확장**: 주간 탐색 작업이 새 표현·형식을 찾아 구현하면 새 실험 변수나 새 콘텐츠 형식으로 고리에 들어온다
 
 ### 공개 자료 사용 기준
-- 출처: 위키미디어 공용 (추후 Pexels·Pixabay). 허용 라이선스: CC0, 퍼블릭 도메인, CC BY, 공공누리 1유형만. SA·NC·ND 제외
+- 지도 경계: OpenStreetMap(ODbL 1.0) 서울 구 경계를 한 번 받아 `data/seoul_gu_osm.json`에 저장. 화면과 설명란에 "© OpenStreetMap contributors (ODbL)" 표기
+- 출처: 위키미디어 공용, Pixabay (Pexels는 키 발급 재개 시). 허용 라이선스: CC0, 퍼블릭 도메인, CC BY, 공공누리 1유형만. SA·NC·ND 제외
 - 지도·로고·문서·인물 사진 제외, 후보 설명을 Claude가 읽고 선택. 쓴 자료는 `assets` 테이블에 기록하고 영상 화면·설명란에 출처 표기
 - 외부 코드·스킬은 그대로 설치하지 않고 읽고 이해한 뒤 직접 구현
 - DB: `data/pipeline.db` (SQLite, 저장소에 커밋). 테이블: trades, posts, videos, social_posts, runs, rejections 등
@@ -63,7 +64,7 @@
 | `pipeline/generate.py` | 글 계획·생성. 지적을 피드백으로 최대 3회 작성 |
 | `pipeline/shorts.py`, `tts.py` | 숏츠 대본 검사·제작 흐름·음성(edge → gTTS) |
 | `pipeline/motion.py` (+`render.py` 공용 글꼴·합치기) | 모션 인포그래픽 렌더러: 카운트업, 막대·선·순위 애니메이션, 구절 자막, 진행 막대, 테마 |
-| `pipeline/timelapse3d.py` | 서울 25개 구 3D 타임랩스(구별 평당 중위가 12개월, 직접 등각 투영). `python -m pipeline.timelapse3d --out out/seoul_3d.mp4`. 매달 한 번 `produce_monthly`가 숏츠로 만들어 게시 흐름에 넣음 (`[shorts] timelapse_monthly`) |
+| `pipeline/timelapse3d.py` | 서울 25개 구 3D 타임랩스(구별 평당 중위가 12개월). 실제 구 경계(`data/seoul_gu_osm.json`, OpenStreetMap ODbL)를 높이만큼 세우고, 격자 칸 단위로 앞뒤를 정해 직접 등각 투영. `python -m pipeline.timelapse3d --out out/seoul_3d.mp4`. 매달 한 번 `produce_monthly`가 숏츠로 만들어 게시 흐름에 넣음 (`[shorts] timelapse_monthly`) |
 | `pipeline/assets.py` | 공개 사진 수급과 라이선스·출처 기록 |
 | `pipeline/metrics.py`, `learn.py` | 성과 수집, 실험 가중치·교훈 갱신 (`data/playbook.json`) |
 | `docs/RESEARCH.md` | 주간 탐색 기록과 구현 대기열 |

@@ -1,13 +1,15 @@
-"""서울 25개 구 3D 타임랩스: 구별 평당 중위가를 3D 막대 지도로 세우고 월 순서대로 재생한다.
+"""서울 25개 구 3D 타임랩스: 실제 구 경계 모양을 평당 중위가만큼 솟아오르게 세우고 월 순서대로 재생한다.
 
   python -m pipeline.timelapse3d --out out/seoul_3d.mp4 [--end 202609] [--months 12]
 
 - 숫자 규칙: 화면의 모든 수치는 seoul_facts()가 DB에서 계산한 값(won() 문자열)만 쓴다.
 - 신고 기한(계약 후 30일)이 끝나지 않은 달은 빼도록 기본 끝 달은 '이번 달 - 2개월'.
-- 지도는 실제 경계가 아니라 구의 대략적 위치를 칸으로 배치한 도식(타일 지도)이다.
+- 지도는 OpenStreetMap 구 경계(data/seoul_gu_osm.json, ODbL — 화면·설명에 출처 표기)를 그대로 쓴다.
 - 3D는 외부 라이브러리 없이 회전 + 등각 투영을 직접 계산해 Pillow로 그린다 (2배로 그린 뒤 축소해 계단 현상 제거).
 """
 import argparse
+import functools
+import json
 import math
 import re
 import statistics
@@ -23,15 +25,112 @@ from .regions import SEOUL
 from .render import W, H, font
 from .tts import FFMPEG
 
-# 구 이름 → (열, 행) 도식 배치 (북쪽이 위, 한강 이북 0~3행, 이남 3~5행)
-TILES = {
-    "은평구": (1, 0), "강북구": (3, 0), "도봉구": (4, 0), "노원구": (5, 0),
-    "서대문구": (1, 1), "종로구": (2, 1), "성북구": (3, 1), "동대문구": (4, 1), "중랑구": (5, 1),
-    "강서구": (0, 2), "마포구": (1, 2), "중구": (2, 2), "성동구": (3, 2), "광진구": (4, 2), "강동구": (5, 2),
-    "양천구": (0, 3), "영등포구": (1, 3), "용산구": (2, 3),
-    "구로구": (0, 4), "동작구": (1, 4), "서초구": (2, 4), "강남구": (3, 4), "송파구": (4, 4),
-    "금천구": (0, 5), "관악구": (1, 5),
-}
+GEO_FILE = Path(__file__).resolve().parent.parent / "data" / "seoul_gu_osm.json"
+MAP_ATTRIBUTION = "지도 경계 © OpenStreetMap contributors (ODbL)"
+MAP_WIDTH = 6.4        # 지도 동서 폭을 이 단위로 맞춘다 (높이·카메라 배율의 기준)
+
+
+@functools.lru_cache(maxsize=1)
+def shapes() -> dict[str, list[tuple[float, float]]]:
+    """구 이름 → 경계 꼭짓점 [(x 동쪽, y 남쪽)] (지도 중심이 0, 동서 폭 MAP_WIDTH). 꼭짓점 순서는 반시계(화면 기준)로 맞춘다."""
+    raw = json.loads(GEO_FILE.read_text(encoding="utf-8"))["districts"]
+    lons = [x for d in raw.values() for x, _ in d["ring"]]
+    lats = [y for d in raw.values() for _, y in d["ring"]]
+    lat0 = (min(lats) + max(lats)) / 2
+    k = math.cos(math.radians(lat0))
+    lon0 = (min(lons) + max(lons)) / 2
+    unit = MAP_WIDTH / ((max(lons) - min(lons)) * k)
+    out = {}
+    for gu, d in raw.items():
+        ring = [((x - lon0) * k * unit, (lat0 - y) * unit) for x, y in d["ring"]]
+        if ring[0] == ring[-1]:
+            ring = ring[:-1]
+        if _area(ring) < 0:
+            ring.reverse()
+        out[gu] = ring
+    return out
+
+
+def _area(ring) -> float:
+    return sum(ring[i][0] * ring[(i + 1) % len(ring)][1] - ring[(i + 1) % len(ring)][0] * ring[i][1]
+               for i in range(len(ring))) / 2
+
+
+CELL = 0.2             # 앞뒤 순서를 정하는 격자 칸 크기 (지도 폭 6.4 기준 약 32칸)
+
+
+def _clip(poly, axis: int, val: float, keep_less: bool):
+    """다각형을 축 평행선 하나로 자른다 (Sutherland–Hodgman 한 단계)."""
+    out = []
+    n = len(poly)
+    for i in range(n):
+        cur, nxt = poly[i], poly[(i + 1) % n]
+        cin = (cur[axis] <= val) if keep_less else (cur[axis] >= val)
+        nin = (nxt[axis] <= val) if keep_less else (nxt[axis] >= val)
+        if cin:
+            out.append(cur)
+        if cin != nin:
+            t = (val - cur[axis]) / (nxt[axis] - cur[axis])
+            out.append((cur[0] + (nxt[0] - cur[0]) * t, cur[1] + (nxt[1] - cur[1]) * t))
+    return out
+
+
+def tiles(ring, cell: float = CELL):
+    """구 경계를 격자 칸으로 잘라 [(칸 중심, 조각 중심, 윗면 조각, [경계 선분])] 으로 돌려준다.
+
+    구 모양은 오목하고 길어서 구 단위로 앞뒤를 정하면 뒤 구가 앞 구를 덮는 오류가 난다. 작은 칸 단위로 앞뒤를 정한다.
+    경계 선분(벽·경계선이 될 부분)은 칸 경계에서 나눠 중점이 속한 칸에 넣는다.
+    한 칸에 두 구가 걸치면 조각 중심으로 앞뒤를 가른다 (경계 벽이 앞 구 윗면을 덮지 않게).
+    """
+    xs, ys = [x for x, _ in ring], [y for _, y in ring]
+    c0, c1 = math.floor(min(xs) / cell), math.floor(max(xs) / cell)
+    r0, r1 = math.floor(min(ys) / cell), math.floor(max(ys) / cell)
+    segs: dict[tuple[int, int], list] = {}
+    n = len(ring)
+    for i in range(n):
+        a, b = ring[i], ring[(i + 1) % n]
+        ts = {0.0, 1.0}
+        for axis in (0, 1):
+            lo, hi = sorted((a[axis], b[axis]))
+            for g in range(math.floor(lo / cell) + 1, math.floor(hi / cell) + 1):
+                ts.add((g * cell - a[axis]) / (b[axis] - a[axis]))
+        ts = sorted(ts)
+        for t0, t1 in zip(ts, ts[1:]):
+            p0 = (a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0)
+            p1 = (a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1)
+            key = (math.floor((p0[0] + p1[0]) / 2 / cell), math.floor((p0[1] + p1[1]) / 2 / cell))
+            segs.setdefault(key, []).append((p0, p1))
+    out = []
+    for c in range(c0, c1 + 1):
+        for r in range(r0, r1 + 1):
+            poly = ring
+            for axis, val, less in ((0, c * cell, False), (0, (c + 1) * cell, True),
+                                    (1, r * cell, False), (1, (r + 1) * cell, True)):
+                poly = _clip(poly, axis, val, less)
+                if len(poly) < 3:
+                    break
+            if len(poly) < 3 or abs(_area(poly)) < 1e-7:
+                if (c, r) in segs:
+                    sg = segs[(c, r)]
+                    mid = (sum(a[0] + b[0] for a, b in sg) / (2 * len(sg)),
+                           sum(a[1] + b[1] for a, b in sg) / (2 * len(sg)))
+                    out.append((((c + 0.5) * cell, (r + 0.5) * cell), mid, None, sg))
+                continue
+            out.append((((c + 0.5) * cell, (r + 0.5) * cell), _centroid(poly), poly, segs.get((c, r), [])))
+    return out
+
+
+def _centroid(ring) -> tuple[float, float]:
+    a = _area(ring)
+    cx = cy = 0.0
+    for i in range(len(ring)):
+        (x0, y0), (x1, y1) = ring[i], ring[(i + 1) % len(ring)]
+        c = x0 * y1 - x1 * y0
+        cx += (x0 + x1) * c
+        cy += (y0 + y1) * c
+    return cx / (6 * a), cy / (6 * a)
+
+
 MIN_TRADES = 10        # 구·월 거래가 이보다 적으면 그 달 값은 비워 둔다 (중위가 신뢰도)
 SOURCE = "자료: 국토교통부 아파트 매매 실거래가 · 계약월 기준 · 해제 거래 제외"
 
@@ -149,9 +248,9 @@ class Timelapse:
         self.seconds = self.HOLD_START + self.PER_MONTH * (len(self.months) - 1) + self.HOLD_END
         self.grad = _gradient(self.th)
         self.lo_rgb, self.hi_rgb = _hex(self.th["bar"]), _hex(self.th["accent"])
-        cols = [c for c, _ in TILES.values()]
-        rows = [r for _, r in TILES.values()]
-        self.mid = ((max(cols) + 1) / 2, (max(rows) + 1) / 2)
+        self.shapes = shapes()
+        self.centers = {gu: _centroid(r) for gu, r in self.shapes.items()}
+        self.tiles = {gu: tiles(r) for gu, r in self.shapes.items()}
 
     def values_at(self, t: float) -> tuple[dict, int, float]:
         """시각 t의 구별 값(앞뒤 달 사이 보간), 현재 달 index, 전환 진행률."""
@@ -161,7 +260,7 @@ class Timelapse:
         a = self.d["values"][self.months[i]]
         b = self.d["values"][self.months[min(i + 1, len(self.months) - 1)]]
         out = {}
-        for gu in TILES:
+        for gu in self.shapes:
             va, vb = a.get(gu), b.get(gu)
             if va is None and vb is None:
                 continue
@@ -178,57 +277,64 @@ class Timelapse:
         sw, sh = W * S, 980 * S
         img = Image.new("RGBA", (sw, sh), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
-        scale, cx, cy = 106 * S, sw / 2, sh * 0.60
-        mx, my = self.mid
-        gap = 0.13
-        boxes = []
-        for gu, (c, r) in TILES.items():
-            x0, y0 = c - mx + gap, r - my + gap
-            x1, y1 = c + 1 - mx - gap, r + 1 - my - gap
+        scale, cx, cy = 116 * S, sw / 2, sh * 0.58
+        ca, sa = math.cos(angle), math.sin(angle)
+        light = (-0.55, 0.35)              # 빛 방향(회전 후 화면 기준): 왼쪽 앞에서
+        grid = _hex(self.th["grid"])
+        # 바닥: 모든 구 경계를 얇게 깐다 (값이 빈 구도 지도 모양이 보이게)
+        for ring in self.shapes.values():
+            d.polygon([project(x, y, 0, angle, scale, cx, cy)[:2] for x, y in ring],
+                      fill=(*grid, 90), outline=(*_shade(grid, 1.6), 160))
+        pieces, labels, hulls = [], [], []
+        for gu, ring in self.shapes.items():
             v = vals.get(gu)
             p = 0.0 if v is None else (v - self.vmin) / ((self.vmax - self.vmin) or 1)
-            hgt = 0.0 if v is None else (0.35 + 4.2 * (v / self.vmax) ** 1.6) * grow
-            depth = project((x0 + x1) / 2, (y0 + y1) / 2, 0, angle, 1, 0, 0)[2]
-            boxes.append((depth, gu, x0, y0, x1, y1, hgt, p, v is None))
-        # 바닥판
-        floor = [project(x, y, 0, angle, scale, cx, cy)[:2] for x, y in
-                 ((-mx - 0.25, -my - 0.25), (mx + 0.25, -my - 0.25), (mx + 0.25, my + 0.25), (-mx - 0.25, my + 0.25))]
-        d.polygon(floor, fill=(*_hex(self.th["grid"]), 70))
-        labels, hulls = [], []
-        for depth, gu, x0, y0, x1, y1, hgt, p, empty in sorted(boxes):
-            base = (90, 100, 115) if empty else _color(p, self.lo_rgb, self.hi_rgb)
-            corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
-            bot = [project(x, y, 0, angle, scale, cx, cy) for x, y in corners]
-            top = [project(x, y, hgt, angle, scale, cx, cy) for x, y in corners]
-            # 옆면 4개: 앞쪽(깊이 큰) 면이 나중에 그려지게
-            sides = []
-            for k in range(4):
-                j = (k + 1) % 4
-                dep = (bot[k][2] + bot[j][2]) / 2
-                poly = [bot[k][:2], bot[j][:2], top[j][:2], top[k][:2]]
-                light = 0.62 if k % 2 == 0 else 0.80
-                sides.append((dep, poly, light))
-            for dep, poly, light in sorted(sides):
-                d.polygon(poly, fill=(*_shade(base, light), 255))
-            outline = (*_shade(base, 1.25), 255) if gu in highlight else None
-            d.polygon([q[:2] for q in top], fill=(*_shade(base, 1.08), 255), outline=outline,
-                      width=5 if outline else 0)
-            tx = sum(q[0] for q in top) / 4
-            ty = sum(q[1] for q in top) / 4
-            labels.append((gu in highlight, depth, gu, tx, ty))
-            hulls.append((depth, _hull([q[:2] for q in bot + top])))
+            hgt = 0.0 if v is None else (0.06 + 2.8 * (v / self.vmax) ** 1.8) * grow
+            base = (90, 100, 115) if v is None else _color(p, self.lo_rgb, self.hi_rgb)
+            hi = gu in highlight
+            style = (base, _shade(base, 1.08), _shade(base, 1.45 if hi else 0.7), 5 if hi else 2)
+            for (mx, my), (px, py), poly, segs in self.tiles[gu]:
+                walls, lines = [], []
+                for (x0, y0), (x1, y1) in segs:
+                    b0, b1 = project(x0, y0, 0, angle, scale, cx, cy), project(x1, y1, 0, angle, scale, cx, cy)
+                    t0, t1 = project(x0, y0, hgt, angle, scale, cx, cy), project(x1, y1, hgt, angle, scale, cx, cy)
+                    lines.append((t0[:2], t1[:2]))
+                    ex, ey = x1 - x0, y1 - y0
+                    rx, ry = ey * ca + ex * sa, ey * sa - ex * ca  # 바깥쪽 법선 (ey, -ex)을 회전
+                    ln = math.hypot(rx, ry) or 1
+                    if hgt <= 0 or (rx + ry) / ln <= 0.02:      # 카메라 반대쪽 면은 안 그림
+                        continue
+                    lit = 0.58 + 0.32 * max(0.0, (rx * light[0] + ry * light[1]) / ln + 0.5) / 1.5
+                    walls.append(((b0[2] + b1[2]) / 2, [b0[:2], b1[:2], t1[:2], t0[:2]], lit))
+                top = None if poly is None else [project(x, y, hgt, angle, scale, cx, cy)[:2] for x, y in poly]
+                pieces.append(((project(mx, my, 0, angle, 1, 0, 0)[2], project(px, py, 0, angle, 1, 0, 0)[2]),
+                               top, walls, lines, style))
+            ring_pts = [project(x, y, z, angle, scale, cx, cy) for x, y in ring for z in (0, hgt)]
+            gx, gy = self.centers[gu]
+            tx, ty = project(gx, gy, hgt, angle, scale, cx, cy)[:2]
+            labels.append((hi, project(gx, gy, 0, angle, 1, 0, 0)[2], gu, tx, ty))
+            hulls.append((labels[-1][1], _hull([q[:2] for q in ring_pts])))
+        for _, top, walls, edges, (base, top_c, line_c, lw) in sorted(pieces, key=lambda t: t[0]):
+            for _, poly, lit in sorted(walls, key=lambda t: t[0]):
+                c = _shade(base, lit)
+                d.polygon(poly, fill=(*c, 255), outline=(*c, 255))
+            if top:
+                d.polygon(top, fill=(*top_c, 255), outline=(*top_c, 255))
+            for a2, b2 in edges:
+                d.line([a2, b2], fill=(*line_c, 255), width=lw)
         # 이름표: 상위 3개 구 먼저(크게), 나머지는 앞쪽부터. 이미 놓인 이름표와 겹치면 생략
         placed = []
         for hi, my_depth, gu, tx, ty in sorted(labels, key=lambda l: (not l[0], -l[1])):
-            box = self._label_box(d, gu, tx, ty, (42 if hi else 30) * S, hi)
+            size = (40 if hi else 26) * S
+            box = self._label_box(d, gu, tx, ty, size, hi)
             if any(box[0] < o[2] and o[0] < box[2] and box[1] < o[3] and o[1] < box[3] for o in placed):
                 continue
-            # 더 앞에 있는 막대에 가려지는 이름표는 그 막대 이름으로 오해되므로 생략
+            # 더 앞에 있는 구에 가려지는 이름표는 그 구 이름으로 오해되므로 생략 (상위 3개는 항상 표시)
             pts = [(box[0], ty), (tx, ty), (box[2], ty)]
-            if any(dep > my_depth + 1e-9 and any(_inside(pt, h) for pt in pts) for dep, h in hulls):
+            if not hi and any(dep > my_depth + 1e-9 and any(_inside(pt, h) for pt in pts) for dep, h in hulls):
                 continue
             placed.append(box)
-            self._label(d, gu, tx, ty, (42 if hi else 30) * S, hi, S)
+            self._label(d, gu, tx, ty, size, hi, S)
         return img.resize((W, 980), Image.LANCZOS)
 
     @staticmethod
@@ -291,7 +397,7 @@ class Timelapse:
                fill=th["muted"])
         d.text((702, ly - 8), "높음", font=font(28, False), fill=th["muted"])
         d.text((60, H - 150), SOURCE, font=font(26, False), fill=th["muted"])
-        d.text((60, H - 112), "지도는 구 위치를 칸으로 단순화한 도식", font=font(26, False), fill=th["muted"])
+        d.text((60, H - 112), MAP_ATTRIBUTION, font=font(26, False), fill=th["muted"])
         d.rectangle((0, 0, int(W * min(1.0, t / self.seconds)), 10), fill=th["accent"])
         return fr
 
@@ -345,10 +451,10 @@ def script(facts: dict, post_url: str) -> dict:
     title = f"서울 25개 구 평당 중위가 월별 변화 3D 지도 ({f['end_month']}까지) #Shorts"
     tags = ["서울아파트", "실거래가", "아파트시세", "평당가격", "부동산데이터"]
     description = (f"{f['start_month']}~{f['end_month']} 서울 25개 구 아파트 평당(3.3㎡) 중위 거래가격을 "
-                   f"월별 3D 막대 지도로 정리했습니다.\n"
+                   f"실제 구 경계 모양의 월별 3D 지도로 정리했습니다.\n"
                    f"{f['end_month']} 기준 최고 {f['top1_gu']} {f['top1_ppp']}, 최저 {f['low1_gu']} {f['low1_ppp']}.\n"
                    f"기간 중 거래 {f['trade_total']} (해제 거래 제외, 계약월 기준). "
-                   f"거래가 적은 구·월은 값을 비웠습니다. 지도는 구 위치를 칸으로 단순화한 도식입니다.\n\n"
+                   f"거래가 적은 구·월은 값을 비웠습니다. 지도 경계 © OpenStreetMap contributors (ODbL).\n\n"
                    f"구별 상세 표: {post_url}\n"
                    "자료: 국토교통부 실거래가 공개시스템. 정보 제공 목적이며 투자 권유가 아닙니다.\n\n"
                    + " ".join("#" + t for t in tags))

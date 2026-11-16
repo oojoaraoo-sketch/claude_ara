@@ -271,8 +271,19 @@ class Timelapse3DTest(unittest.TestCase):
         from pipeline import timelapse3d as tl
         from pipeline.analyze import PYEONG, won
         from pipeline.regions import SEOUL
-        self.assertEqual(set(tl.TILES), {gu for gu, _ in SEOUL.values()})          # 25개 구 모두 배치
-        self.assertEqual(len(set(tl.TILES.values())), 25)                           # 칸 중복 없음
+        shapes = tl.shapes()
+        self.assertEqual(set(shapes), {gu for gu, _ in SEOUL.values()})            # 25개 구 실제 경계 모두 있음
+        for gu, ring in shapes.items():
+            self.assertGreater(len(ring), 10, gu)
+            self.assertGreater(tl._area(ring), 0, gu)                               # 꼭짓점 순서 통일
+            parts = tl.tiles(ring)                                                  # 격자 조각 넓이 합 = 구 넓이
+            self.assertAlmostEqual(sum(abs(tl._area(q)) for _, _, q, _ in parts if q), tl._area(ring), places=6)
+        east = tl._centroid(shapes["강동구"])[0]
+        west = tl._centroid(shapes["강서구"])[0]
+        north = tl._centroid(shapes["도봉구"])[1]
+        south = tl._centroid(shapes["서초구"])[1]
+        self.assertGreater(east, west)                                              # 동쪽이 x 큼
+        self.assertLess(north, south)                                               # 북쪽이 y 작음
         self.assertEqual(tl.default_end(date(2026, 11, 15)), "202609")              # 신고 기한 안 끝난 달 제외
         today = date(2026, 11, 14)
         with tempfile.TemporaryDirectory() as tmp:
