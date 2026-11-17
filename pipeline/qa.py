@@ -130,7 +130,12 @@ def fill(text: str, facts: dict) -> str:
         val = str(facts[key])
         return val + _pick(m.group(2) or m.group(4), _jong(val))
     text = _JOSA_RE.sub(josa, text)
-    return PLACEHOLDER.sub(lambda m: str(facts[m.group(1)]), text)
+    text = PLACEHOLDER.sub(lambda m: str(facts[m.group(1)]), text)
+    # 음수 변화율 뒤에 감소 표현이 오면 부호를 뺀다 ("-13.2% 낮아졌다" → "13.2% 낮아졌다")
+    return _DOUBLE_NEG.sub(r"\1 \2", text)
+
+
+_DOUBLE_NEG = re.compile(r"-(\d+(?:\.\d+)?%) ?(낮|줄|떨어|내|하락|감소)")
 
 
 def render(draft: dict, facts: dict, tables: dict, chart_url: str, chart_alt: str) -> dict:

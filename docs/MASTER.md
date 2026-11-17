@@ -35,7 +35,7 @@
   인기 Claude 스킬·모션 기법·Claude 활용법·성장 방법 탐색 → docs/RESEARCH.md 기록 → 대기열에서 1개 구현
 ```
 - **PC 예약 작업 순서 잠금:** PC가 꺼져 있다 켜지면 밀린 예약 작업이 한꺼번에 시작된다. 세 작업은 같은 폴더를 고치므로
-  `%USERPROFILE%\.claude\scheduled-tasks\claude_ara.lock` 파일로 한 번에 하나만 돈다 (최대 60분 대기, 90분 지난 잠금은 무시).
+  `private\claude_ara.lock`(작업 폴더 안, git 제외. Claude 설정 폴더에 두면 승인 창이 떠 무인 실행이 멈춤) 파일로 한 번에 하나만 돈다 (최대 60분 대기, 90분 지난 잠금은 무시).
 - **YouTube 하루 업로드 한도:** 채널의 하루 업로드 수를 넘으면 `uploadLimitExceeded`로 거부된다. 코드 문제가 아니며 다음 실행에서 다시 만들어 올린다.
 
 ### 스스로 나아지는 고리 (성과 → 개선 → 적용)

@@ -341,3 +341,10 @@ class InstagramErrorTest(unittest.TestCase):
         msg = instagram._err(R())
         self.assertNotIn("17841400000000000", msg)
         self.assertIn("<ID>", msg)
+
+
+class DoubleNegativeTest(unittest.TestCase):
+    def test_minus_with_decrease_word(self):
+        out = qa.fill("전월보다 {{chg}}% 낮아졌고 거래는 {{t}}% 늘었습니다", {"chg": -13.2, "t": 5.0})
+        self.assertIn("13.2% 낮아졌고", out)
+        self.assertNotIn("-13.2", out)
