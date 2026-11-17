@@ -16,6 +16,9 @@
 | 8 | 무료 영상 소스(Pexels·Pixabay API) 연결 | 영상 배경 | Pixabay 완료, Pexels 키 발급 중단으로 대기 |
 | 9 | 월 1회 3~5분 가로형 '서울 월간 요약' 영상 (구별 순위·타임랩스·거래량을 이어 붙임, 해설 내레이션) | 2027-02부터 YPP 진입 기준이 쇼츠 2천만 회/90일 또는 시청 8천 시간으로 올라감 → 쇼츠만으로는 수익화가 멀어 긴 영상 시청 시간 경로 확보 | 대기 (검토) |
 | 10 | 3D 타임랩스 강조 구 이름표가 가려질 때 옆에 지시선(리더 라인)으로 이름 표시 | 상위 3개 구 중 이름이 안 보이는 경우 해소(11-16 샘플에서 3위 성동구 이름표 생략) | 대기 |
+| 11 | 자막 시각을 음성과 정확히 맞춤: edge-tts의 단어·문장 경계 이벤트(무료, 추가 설치 없음)로 구절 시작 시각을 받고, gTTS 대체 음성일 때만 지금처럼 글자 수 비례 | 지금은 글자 수 비례라 자막이 말보다 앞서거나 늦음 → 가독성 | 대기 |
+| 12 | HyperFrames(HTML→MP4) 시험: 장면 1종을 HTML·CSS로 만들어 렌더 시간·화질·Actions 동작을 비교, 좋으면 실험 변수(renderer=html)로 학습 고리에 투입 | 글꼴·레이아웃·애니메이션 표현력 향상, Claude가 HTML을 잘 다룸 | 대기 (시험) |
+| 13 | FFmpeg 음량 맞춤(loudnorm, -14 LUFS 부근)과 장면 전환(xfade) | 영상마다 음량이 고르게, 플랫폼 권장 음량 | 대기 (작음) |
 
 ## 구현 완료
 | 날짜 | 내용 |
@@ -56,4 +59,11 @@
 | d. 블로그 SEO | https://www.digitalapplied.com/blog/programmatic-seo-after-march-2026-surviving-scaled-content-ban · https://gsqi.com/marketing-blog/august-2026-google-spam-update-case-studies/ | 2026년 3월·8월·9월 업데이트에서 '대량 생성 콘텐츠 남용'이 주요 단속 대상. AI 사용 자체가 아니라 사용자에게 가치 없는 틀 반복 페이지가 대상 (대행사 블로그, 비공식) | 대기열 5(단지 페이지 고유 문장 비율)와 3(템플릿 반복 회피)의 근거 강화. 글 수 늘리기보다 구별 고유 관찰 우선 | 기존 대기열 강화 |
 
 비고: 3D 타임랩스 대본은 Claude를 부르지 않는 고정 틀이다. 한 달에 한 편이라 반복 위험이 낮고, 숫자 오류 가능성을 없애는 쪽을 택했다.
+
+### 2026-11-17 (사용자 요청 검토: HyperFrames·WhisperX·FFmpeg)
+| 분야 | 출처 | 한 줄 요약 | 적용 방법 | 결정 |
+|---|---|---|---|---|
+| c. 코드 표현 | https://github.com/heygen-com/hyperframes | HeyGen의 HTML→MP4 렌더러(Apache 2.0, 무료). 헤드리스 크롬으로 프레임을 찍고 FFmpeg로 인코딩, GSAP·CSS·Lottie·Three.js 애니메이션 사용, Claude Code용 스킬 제공 | 지금 Pillow 렌더러를 바로 갈아엎지 않고 장면 1종으로 비교 시험 | 채택(시험) → 대기열 12 |
+| c. 코드 표현 | https://arxiv.org/abs/2303.00747 · https://github.com/m-bain/whisperX | Whisper 받아쓰기 + wav2vec2 강제 정렬로 단어 단위 시각을 얻음 | 우리는 대본을 이미 알고 있어 받아쓰기가 필요 없음. PyTorch·모델 내려받기로 Actions가 수 분~수십 분 느려짐. 같은 효과를 edge-tts 경계 이벤트로 무료·즉시 얻을 수 있음 | 기각 → 대안을 대기열 11 |
+| c. 코드 표현 | FFmpeg | 이미 모든 영상 인코딩·음성 합치기에 사용 중(imageio-ffmpeg) | 남은 활용: 음량 맞춤·전환 효과 | 이미 사용, 보강은 대기열 13 |
 
