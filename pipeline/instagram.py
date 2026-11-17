@@ -10,6 +10,7 @@
 """
 import json
 import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -69,7 +70,9 @@ def _save(state: dict):
 def _err(r) -> str:
     try:
         e = r.json().get("error", {})
-        return f"HTTP {r.status_code} {e.get('type', '')} {e.get('code', '')}: {e.get('message', '')[:200]}"
+        # 공개 저장소의 DB에 들어가므로 계정·객체 ID(긴 숫자)는 가린다
+        msg = re.sub(r"\d{8,}", "<ID>", e.get("message", ""))[:200]
+        return f"HTTP {r.status_code} {e.get('type', '')} {e.get('code', '')}: {msg}"
     except ValueError:
         return f"HTTP {r.status_code}"
 

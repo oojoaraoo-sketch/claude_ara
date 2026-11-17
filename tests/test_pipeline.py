@@ -327,3 +327,17 @@ class Timelapse3DTest(unittest.TestCase):
                          " VALUES ('seoul-3d-202609', 't', 'd', '[]', 1, 'uploaded', 'x', 'x')")
             self.assertIsNone(tl.produce_monthly(conn, load_config(), Path(tmp), date(2026, 11, 16)))
             conn.close()
+
+
+class InstagramErrorTest(unittest.TestCase):
+    def test_error_hides_ids(self):
+        from pipeline import instagram
+
+        class R:
+            status_code = 400
+            def json(self):
+                return {"error": {"type": "GraphMethodException", "code": 100,
+                                  "message": "Object with ID '17841400000000000' does not exist"}}
+        msg = instagram._err(R())
+        self.assertNotIn("17841400000000000", msg)
+        self.assertIn("<ID>", msg)
