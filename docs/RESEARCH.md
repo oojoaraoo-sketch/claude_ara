@@ -94,7 +94,7 @@
 | 자료 | https://www.pexels.com/api/key/ | 11-18 확인: "New API key issuance is currently paused" 그대로 | 매일 점검이 계속 확인 | 보류 |
 | 자료 | https://pixabay.com/api/docs/ | 기존 키로 사진 검색도 가능(가로·min_width·safesearch), 주소 영구 링크 금지·24시간 캐시 | 서울 공통 사진 후보로 사용, 매번 새로 검색해 내려받음, 인물 태그 제외 | 채택(구현) |
 | 자료 | https://api.openverse.org/v1/images/ | 키 없이 CC0·PDM·BY 필터 검색 가능하나, 구 이름 검색 결과가 1~3건이고 대부분 위키미디어 중복. 익명 한도 낮음 | 이득 작음 | 보류 |
-| 자료 | https://www.data.go.kr/en/data/15101753/openapi.do (한국관광공사 TourAPI) | 관광지 대표 사진과 공공누리 유형 제공, 구 단위 조회 가능. 다만 sigunguCode가 법정동 코드로 바뀌는 중이고 사진 크기 미확인 | 국문 관광정보 서비스 활용신청 후 구별 사진 후보로 추가 가능 | 보류(활용신청·명세 확인 필요) |
+| 자료 | https://www.data.go.kr/en/data/15101753/openapi.do (한국관광공사 TourAPI) | 관광지 대표 사진과 공공누리 유형 제공, 구 단위 조회 가능. 다만 sigunguCode가 법정동 코드로 바뀌는 중이고 사진 크기 미확인 | 국문 관광정보 서비스 활용신청 후 구별 사진 후보로 추가 가능 | 채택(구현) — 11-18 활용신청 승인, 구 사진 후보에 공공누리 1유형만 추가. 법정동 코드(시도 11 + 시군구 3자리) 사용, 실제 응답은 11-19 실행 로그 '[assets]' 줄로 확인 |
 | 자료 | https://mediahub.seoul.go.kr/archives/2006984 (서울역사아카이브) | 공공누리 1유형 사진 2.6만 건, 근현대·시정 사진 위주, API 없음 | 옛 사진이라 현재 시세 영상 배경엔 부적합 | 기각 |
 | 자료 | https://api.coverr.co/docs · Mixkit | Coverr API는 로고 표기 요구·상업 이용 제한 문구, Mixkit은 API 없음 | — | 기각 |
 

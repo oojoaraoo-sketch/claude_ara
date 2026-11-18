@@ -86,6 +86,40 @@ def search(query: str, limit: int = 30) -> list[dict]:
     return out
 
 
+KTO = "https://apis.data.go.kr/B551011/KorService2/areaBasedList2"
+
+
+def kto_search(region: str) -> list[dict]:
+    """한국관광공사 국문 관광정보(TourAPI)의 그 구 관광지 대표 사진. 공공누리 1유형(Type1)만.
+    키는 실거래가와 같은 공공데이터포털 키(DATA_GO_KR_KEY). 키·승인·형식 문제면 조용히 빈 목록."""
+    from .regions import SEOUL
+    key = os.environ.get("DATA_GO_KR_KEY", "").strip()
+    code = next((c for c, v in SEOUL.items() if v[0] == region), None)
+    if not key or not code:
+        return []
+    r = requests.get(KTO, timeout=30, params={
+        "serviceKey": key, "MobileOS": "ETC", "MobileApp": "SilgeoraeReport", "_type": "json",
+        "lDongRegnCd": code[:2], "lDongSignguCd": code[2:], "contentTypeId": 12, "arrange": "Q",
+        "numOfRows": 40, "pageNo": 1})
+    if r.status_code != 200:
+        return []
+    try:
+        items = r.json()["response"]["body"]["items"]
+        items = items.get("item", []) if isinstance(items, dict) else []
+    except (ValueError, KeyError, TypeError):
+        return []
+    out = []
+    for it in items if isinstance(items, list) else [items]:
+        url = it.get("firstimage") or ""
+        if not url or (it.get("cpyrhtDivCd") or "").lower() != "type1":
+            continue
+        out.append({"title": it.get("title", ""), "desc": f"{region} 관광지 대표 사진 ({it.get('addr1', '')})",
+                    "license": "KOGL Type 1", "artist": "한국관광공사",
+                    "file_url": url.replace("http://", "https://"),
+                    "page_url": f"https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid={it.get('contentid', '')}"})
+    return out
+
+
 def _pick(writer, region: str, cands: list[dict]) -> int:
     """Claude가 후보의 제목·설명을 읽고 배경으로 쓸 사진을 고른다. 마땅치 않으면 -1."""
     listing = "\n".join(f"{i}. {c['title']} — {c['desc']}" for i, c in enumerate(cands))
@@ -101,12 +135,18 @@ def _pick(writer, region: str, cands: list[dict]) -> int:
         return -1
 
 
+def _days_ago(n: int) -> str:
+    from datetime import datetime, timedelta, timezone
+    return (datetime.now(timezone.utc) - timedelta(days=n)).replace(microsecond=0).isoformat()
+
+
 def region_photo(conn, writer, region: str, out_dir: Path) -> tuple[Path | None, str | None, str | None]:
     """(사진 파일, 화면용 출처 한 줄, 설명란용 출처) 를 돌려준다. 없으면 (None, None, None)."""
     conn.executescript(SCHEMA)
     key = f"region:{region}"
     row = conn.execute("SELECT * FROM assets WHERE key = ?", (key,)).fetchone()
-    if row is None:
+    stale = row is not None and row["status"] == "none" and row["fetched_at"] < _days_ago(7)
+    if row is None or stale:      # 'none' 은 일주일 뒤 다시 찾는다 (새 출처가 생길 수 있음)
         if not hasattr(writer, "_call"):     # 시험용 작성기: 외부 검색을 하지 않는다
             return None, None, None
         chosen = None
@@ -120,9 +160,16 @@ def region_photo(conn, writer, region: str, out_dir: Path) -> tuple[Path | None,
                         cands.append(c)
                 if len(cands) >= 10:
                     break
+            try:
+                kto = kto_search(region)
+                print(f"[assets] {region}: 위키미디어 후보 {len(cands)}개, 관광공사 공공누리1 후보 {len(kto)}개")
+                cands += kto[:6]
+            except Exception as e:
+                print(f"[assets] {region}: 관광공사 조회 실패 {type(e).__name__}")
             if cands and hasattr(writer, "_call"):
-                i = _pick(writer, region, cands[:12])
-                chosen = cands[i] if i >= 0 else None
+                pool = cands[:10] + [c for c in cands[10:] if c["artist"] == "한국관광공사"]
+                i = _pick(writer, region, pool[:16])
+                chosen = pool[i] if i >= 0 else None
         except Exception:
             return None, None, None      # 네트워크 문제는 기록하지 않고 다음에 다시 시도
         c = chosen or {}
@@ -142,11 +189,18 @@ def _download_photo(row, out_dir: Path) -> tuple[Path | None, str | None, str | 
         r.raise_for_status()
         path = out_dir / "photo.jpg"
         path.write_bytes(r.content)
+        from PIL import Image
+        with Image.open(path) as im:
+            if im.width < 800:          # 너무 작은 사진은 세로 화면에서 흐릿해진다
+                return None, None, None
     except Exception:
         return None, None, None
-    site = "Pixabay" if "pixabay.com" in (row["page_url"] or "") else "Wikimedia Commons"
-    short = f"사진: {row['artist']} / {site if site == 'Pixabay' else row['license']}"
-    full = f"배경 사진: {row['artist']}, {row['license']}, {site} ({row['page_url']})"
+    page = row["page_url"] or ""
+    site = ("Pixabay" if "pixabay.com" in page else "한국관광공사 TourAPI" if "visitkorea" in page
+            else "Wikimedia Commons")
+    lic = "공공누리 제1유형" if row["license"] == "KOGL Type 1" else row["license"]
+    short = f"사진: {row['artist']} / {'Pixabay' if site == 'Pixabay' else lic}"
+    full = f"배경 사진: {row['artist']}, {lic}, {site} ({page})"
     return path, short, full
 
 

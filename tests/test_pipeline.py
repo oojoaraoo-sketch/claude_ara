@@ -369,3 +369,33 @@ class MediaFallbackTest(unittest.TestCase):
         conn = sqlite3.connect(":memory:")
         conn.row_factory = sqlite3.Row
         self.assertEqual(assets.seoul_photo(conn, object(), "s", Path(tempfile.gettempdir())), (None, None, None))
+
+
+class KtoPhotoTest(unittest.TestCase):
+    def test_only_type1_and_district_code(self):
+        import os
+        from unittest import mock
+        from pipeline import assets
+        body = {"response": {"body": {"items": {"item": [
+            {"title": "A공원", "firstimage": "http://tong.visitkorea.or.kr/a.jpg", "cpyrhtDivCd": "Type1",
+             "contentid": "1", "addr1": "서울"},
+            {"title": "B궁", "firstimage": "http://tong.visitkorea.or.kr/b.jpg", "cpyrhtDivCd": "Type3",
+             "contentid": "2"},
+            {"title": "C", "firstimage": "", "cpyrhtDivCd": "Type1", "contentid": "3"}]}}}}
+        resp = mock.Mock(status_code=200)
+        resp.json.return_value = body
+        with mock.patch.dict(os.environ, {"DATA_GO_KR_KEY": "k"}), \
+                mock.patch.object(assets.requests, "get", return_value=resp) as g:
+            out = assets.kto_search("강남구")
+        self.assertEqual([c["title"] for c in out], ["A공원"])
+        self.assertTrue(out[0]["file_url"].startswith("https://"))
+        self.assertTrue(assets.license_ok(out[0]["license"]))
+        p = g.call_args.kwargs["params"]
+        self.assertEqual((p["lDongRegnCd"], p["lDongSignguCd"]), ("11", "680"))
+
+    def test_no_key_no_call(self):
+        import os
+        from unittest import mock
+        from pipeline import assets
+        with mock.patch.dict(os.environ, {"DATA_GO_KR_KEY": ""}):
+            self.assertEqual(assets.kto_search("강남구"), [])

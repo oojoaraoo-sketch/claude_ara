@@ -47,7 +47,7 @@
 
 ### 공개 자료 사용 기준
 - 지도 경계: OpenStreetMap(ODbL 1.0) 서울 구 경계를 한 번 받아 `data/seoul_gu_osm.json`에 저장. 화면과 설명란에 "© OpenStreetMap contributors (ODbL)" 표기
-- 출처: 위키미디어 공용, Pixabay 영상·사진 (Pexels는 키 발급 재개 시). Pixabay 사진은 주소를 저장하지 않고 매번 검색·내려받기. 허용 라이선스: CC0, 퍼블릭 도메인, CC BY, 공공누리 1유형만. SA·NC·ND 제외
+- 출처: 위키미디어 공용, 한국관광공사 TourAPI 관광지 사진(공공누리 1유형만, 기존 DATA_GO_KR_KEY), Pixabay 영상·사진 (Pexels는 키 발급 재개 시). Pixabay 사진은 주소를 저장하지 않고 매번 검색·내려받기. 허용 라이선스: CC0, 퍼블릭 도메인, CC BY, 공공누리 1유형만. SA·NC·ND 제외
 - 지도·로고·문서·인물 사진 제외, 후보 설명을 Claude가 읽고 선택. 쓴 자료는 `assets` 테이블에 기록하고 영상 화면·설명란에 출처 표기
 - 외부 코드·스킬은 그대로 설치하지 않고 읽고 이해한 뒤 직접 구현
 - DB: `data/pipeline.db` (SQLite, 저장소에 커밋). 테이블: trades, posts, videos, social_posts, runs, rejections 등
