@@ -261,8 +261,6 @@ class ShortsTest(unittest.TestCase):
             conn.close()
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class Timelapse3DTest(unittest.TestCase):
@@ -399,3 +397,19 @@ class KtoPhotoTest(unittest.TestCase):
         from pipeline import assets
         with mock.patch.dict(os.environ, {"DATA_GO_KR_KEY": ""}):
             self.assertEqual(assets.kto_search("강남구"), [])
+
+
+class DeadlineNoteTest(unittest.TestCase):
+    def test_closed_month_drops_deadline_wording(self):
+        from pipeline import qa
+        self.assertNotIn("신고 기한", qa._deadline_note({"month": "2026년 9월", "as_of": "2026-11-19"}))
+        self.assertIn("신고 기한", qa._deadline_note({"month": "2026년 10월", "as_of": "2026-11-19"}))
+        self.assertIn("신고 기한", qa._deadline_note({"as_of": "2026-11-19"}))
+
+    def test_pyeong_note_is_not_data_number(self):
+        from pipeline import qa
+        self.assertNotIn("1", qa.NON_DATA.sub("", "전용면적 3.3㎡(1평)당"))
+
+
+if __name__ == "__main__":
+    unittest.main()

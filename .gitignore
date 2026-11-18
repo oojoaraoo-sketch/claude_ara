@@ -9,3 +9,4 @@ client_secret*.json
 
 tiktok_upload/
 private/
+.claude/settings.local.json

@@ -6,8 +6,8 @@ MARKER = re.compile(r"\[\[(CHART|TABLE:[a-z0-9_]+)\]\]")
 DIGITS = re.compile(r"\d+(?:[.,]\d+)*")
 # 설명에 자연스럽게 쓰일 수 있는 고정 상수 (평 환산, 소형 기준, 신고기한)
 ALWAYS_OK = {"3.3", "60", "30"}
-# 데이터 값이 아닌 숫자: 마크다운 번호 목록("1. "), 표 순위("1위"~"10위")
-NON_DATA = re.compile(r"(?m)^\s*\d{1,2}[.)]\s|(?<!\d)(?:10|[1-9])(?=위)")
+# 데이터 값이 아닌 숫자: 마크다운 번호 목록("1. "), 표 순위("1위"~"10위"), 평 환산 설명 "(1평)"
+NON_DATA = re.compile(r"(?m)^\s*\d{1,2}[.)]\s|(?<!\d)(?:10|[1-9])(?=위)|\(1평\)")
 # 소형(60㎡ 이하)의 나머지 전체를 '중대형'으로 부르는 해석 오류 (60~85㎡는 중소형)
 AREA_MISLABEL = re.compile(r"나머지[^.\n]{0,15}(?:중대형|중형 이상)"
                            r"|(?:중대형|중형 이상)[^.\n]{0,15}(?:더 많았|절반(?:이|을) 넘|많았다는 뜻)")
@@ -138,6 +138,22 @@ def fill(text: str, facts: dict) -> str:
 _DOUBLE_NEG = re.compile(r"-(\d+(?:\.\d+)?%) ?(낮|줄|떨어|내|하락|감소)")
 
 
+def _deadline_note(facts: dict) -> str:
+    """대상 월의 신고 기한(계약 후 30일)이 수집일 전에 끝났으면 '추가 신고' 대신 해제·정정만 언급한다."""
+    import calendar
+    from datetime import date, timedelta
+    m = re.fullmatch(r"(\d{4})년 (\d{1,2})월", str(facts.get("month", "")))
+    try:
+        as_of = date.fromisoformat(str(facts.get("as_of", ""))[:10])
+    except ValueError:
+        as_of = None
+    if m and as_of:
+        y, mo = int(m.group(1)), int(m.group(2))
+        if date(y, mo, calendar.monthrange(y, mo)[1]) + timedelta(days=30) < as_of:
+            return "이후 거래 해제나 정정 신고로 수치가 일부 바뀔 수 있습니다."
+    return "신고 기한(계약 후 30일) 내 추가 신고로 수치가 바뀔 수 있습니다."
+
+
 def render(draft: dict, facts: dict, tables: dict, chart_url: str, chart_alt: str) -> dict:
     """플레이스홀더 치환 + 표/차트 삽입 + FAQ/출처 부착. 최종 마크다운을 반환."""
     body = fill(draft["body_md"], facts)
@@ -156,7 +172,7 @@ def render(draft: dict, facts: dict, tables: dict, chart_url: str, chart_alt: st
     body += (
         "\n\n---\n\n"
         f"*자료: 국토교통부 실거래가 공개시스템(공공데이터포털 API), {facts['as_of']} 수집 기준. "
-        "해제(취소)된 거래는 제외했으며, 신고 기한(계약 후 30일) 내 추가 신고로 수치가 바뀔 수 있습니다. "
+        f"해제(취소)된 거래는 제외했으며, {_deadline_note(facts)} "
         + (f"신고가(기존 최고가를 넘어선 거래)는 {facts['high_since']} 이후 수집된 거래와 비교한 값입니다. "
            if facts.get("high_since") else "")
         + "이 글은 공개 데이터를 정리한 정보이며 투자 권유가 아닙니다.*"

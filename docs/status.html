@@ -68,7 +68,7 @@ footer { color: var(--muted); font-size: .82rem }
       <h1>실거래가 리포트 운영 현황</h1>
       <p class="sub">서울 아파트 실거래 데이터로 블로그·YouTube·Instagram·TikTok 콘텐츠를 매일 자동 발행</p>
     </div>
-    <div class="stamp">마지막 갱신 <b>2026-11-18</b><br>다음 자동 실행 <b>11-19 01:00</b></div>
+    <div class="stamp">마지막 갱신 <b>2026-11-19</b><br>다음 자동 실행 <b>11-20 01:00</b></div>
   </header>
 
   <section>
@@ -83,9 +83,9 @@ footer { color: var(--muted); font-size: .82rem }
       <div class="ch ok"><span class="name">Instagram 릴스</span><span class="pill ok">운영 중</span>
         <span class="num">7 <small>편</small></span>
         <span class="note">11-18 계정 연결이 사라져 거부 → 재연결·권한 부여 후 2편 재게시 성공</span></div>
-      <div class="ch warn"><span class="name">TikTok</span><span class="pill warn">관찰</span>
+      <div class="ch bad"><span class="name">TikTok</span><span class="pill bad">멈춤</span>
         <span class="num">5 <small>편 공개</small></span>
-        <span class="note">11-17 아침 작업 중단(잠금 파일 위치 문제, 11-18 수정) · 조회수 0 관찰</span></div>
+        <span class="note">11-17·11-18 아침 작업이 승인 대기로 멈춤 — 예약 작업 권한 모드를 ‘자동’으로 바꿔야 재개</span></div>
       <div class="ch ok"><span class="name">데이터 수집</span><span class="pill ok">정상</span>
         <span class="num">25 <small>개 구</small></span>
         <span class="note">최근 3개월 매일 재수집 · 14개월 보충</span></div>
@@ -122,6 +122,7 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="box">
       <h2>사용자가 할 일</h2>
       <ul>
+        <li><b>예약 작업 3개(틱톡 업로드·매일 점검·주간 탐색) 권한 모드를 ‘자동’으로 변경</b> — 지금은 ‘승인 요청’ 모드라 첫 명령에서 멈춤</li>
         <li class="done">Instagram 계정을 ‘실거래가 리포트’ 포트폴리오에 재연결 (11-18)</li>
         <li class="done">Meta 개발자 계정 확인 (Instagram 재개)</li>
         <li class="done">공공데이터포털 ‘한국관광공사 국문 관광정보’ API 활용신청 (11-18 승인)</li>
@@ -140,7 +141,8 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="box">
       <h2>Claude가 할 일</h2>
       <ol>
-        <li>11-18 08:10 TikTok·11-19 02:00 점검이 새 잠금 위치로 정상 실행되는지 확인</li>
+        <li>11-19 재실행 결과 확인 (9월분 글 반려 수정, 관광공사·Pixabay 사진 후보)</li>
+        <li>권한 모드 변경 뒤 TikTok·매일 점검이 끝까지 도는지 확인, 밀린 TikTok 게시</li>
         <li>매 실행 후 새 글·숏츠 직접 품질 검토</li>
         <li>12-01 이후 10월분 3D 타임랩스(실제 구 경계 모양) 첫 게시 확인</li>
         <li>Google 서치 콘솔·네이버 서치어드바이저 등록</li>
@@ -183,6 +185,7 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="tablewrap"><table>
       <thead><tr><th>날짜</th><th>변경</th><th>커밋</th></tr></thead>
       <tbody>
+        <tr><td class="date">11-19</td><td>01:00 실행이 9월분 글 3편 연속 반려로 중단 → 하단 ‘신고 기한’ 문구를 기한 지난 달엔 ‘해제·정정 신고’로, ‘(1평)’ 숫자 오검출 수정, 지침 보강. 예약 작업 멈춤의 진짜 원인(권한 모드) 확인, 모델 Opus 지정</td><td class="c">(커밋)</td></tr>
         <tr><td class="date">11-18</td><td>한국관광공사 관광지 사진(공공누리 1유형) 연결: 구마다 그 구의 사진을 쓸 가능성 확대, 사진 없던 구는 7일 뒤 재검색</td><td class="c">6e59f3e</td></tr>
         <tr><td class="date">11-18</td><td>배경 자료 보강: 배경 없는 영상 실험 제거, 스톡 영상→구 사진→서울 공통 사진(Pixabay·위키미디어) 순으로 대체. 추가 출처 6곳 검토</td><td class="c">64a96e4</td></tr>
         <tr><td class="date">11-18</td><td>아파트 전월세 실거래가 API 활용신청 승인 → 전세가율·월세 콘텐츠(대기열 20) 준비 완료</td><td class="c">7cc2988</td></tr>
