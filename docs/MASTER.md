@@ -39,7 +39,7 @@
 - **YouTube 하루 업로드 한도:** 채널의 하루 업로드 수를 넘으면 `uploadLimitExceeded`로 거부된다. 코드 문제가 아니며 다음 실행에서 다시 만들어 올린다.
 
 ### 스스로 나아지는 고리 (성과 → 개선 → 적용)
-1. **실험**: 영상마다 실험 변수(테마 4종, 도입부 유형 3종, 사진 배경 유무)를 가중치에 따라 고른다 (`learn.choose`, videos.variant에 기록)
+1. **실험**: 영상마다 실험 변수(테마 4종, 도입부 유형 3종, 배경 종류 사진·스톡 영상 — 실패 시 서울 공통 사진으로 대체, 모두 실패할 때만 배경 없음)를 가중치에 따라 고른다 (`learn.choose`, videos.variant에 기록)
 2. **평가**: 매일 조회수·반응을 모으고(`metrics.py`), 게시 2일 뒤 채널별 중앙값 대비 상대 점수를 낸다 (`learn.score`)
 3. **개선**: 변수 값별 평균 점수로 가중치를 고친다. 표본 3개 미만은 계속 시험. 주 1회 Claude가 상·하위 영상을 비교해 제목·도입부 교훈을 뽑는다 (`learn.update` → `data/playbook.json`)
 4. **적용**: 다음 영상의 렌더 설정과 대본 지침에 가중치와 교훈이 들어간다 (`learn.guidance`)
@@ -47,7 +47,7 @@
 
 ### 공개 자료 사용 기준
 - 지도 경계: OpenStreetMap(ODbL 1.0) 서울 구 경계를 한 번 받아 `data/seoul_gu_osm.json`에 저장. 화면과 설명란에 "© OpenStreetMap contributors (ODbL)" 표기
-- 출처: 위키미디어 공용, Pixabay (Pexels는 키 발급 재개 시). 허용 라이선스: CC0, 퍼블릭 도메인, CC BY, 공공누리 1유형만. SA·NC·ND 제외
+- 출처: 위키미디어 공용, Pixabay 영상·사진 (Pexels는 키 발급 재개 시). Pixabay 사진은 주소를 저장하지 않고 매번 검색·내려받기. 허용 라이선스: CC0, 퍼블릭 도메인, CC BY, 공공누리 1유형만. SA·NC·ND 제외
 - 지도·로고·문서·인물 사진 제외, 후보 설명을 Claude가 읽고 선택. 쓴 자료는 `assets` 테이블에 기록하고 영상 화면·설명란에 출처 표기
 - 외부 코드·스킬은 그대로 설치하지 않고 읽고 이해한 뒤 직접 구현
 - DB: `data/pipeline.db` (SQLite, 저장소에 커밋). 테이블: trades, posts, videos, social_posts, runs, rejections 등

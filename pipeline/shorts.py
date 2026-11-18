@@ -92,19 +92,28 @@ def produce(conn, cfg, writer, post, out_dir: Path = VIDEO_DIR) -> tuple[bool, l
             db.log_rejection(conn, "video:" + post["slug"], problems)
             return False, problems
 
-        # 2) 공개 사진 배경 (실험 변수 photo=on 이고 조건에 맞는 사진이 있을 때만)
+        # 2) 배경 자료: 실험 변수(clip=스톡 영상, on=사진)를 먼저 시도하고, 안 되면 다른 쪽, 그다음 서울 공통 사진.
+        #    모두 실패할 때만 그라데이션(off)
         theme = motion.THEMES[variant["theme"]]
         photo, credit_short, credit_full = None, None, None
-        if variant["photo"] == "clip":
-            path, credit_short, credit_full = assets.stock_clip(conn, post["slug"], work)
-            photo = motion.load_clip(path)
-            if photo is None:
-                variant["photo"] = "on"                             # 키가 없거나 실패하면 사진으로
-        if variant["photo"] == "on" and s.get("public_photos", True):
-            path, credit_short, credit_full = assets.region_photo(conn, writer, facts["region"], work)
-            photo = motion.load_photo(path, theme)
+        order = ["clip", "on"] if variant["photo"] == "clip" else ["on", "clip"]
+        if not s.get("public_photos", True):
+            order = ["clip"]
+        for kind in order + ["seoul"]:
+            if kind == "clip":
+                path, credit_short, credit_full = assets.stock_clip(conn, post["slug"], work)
+                photo = motion.load_clip(path)
+            elif kind == "on":
+                path, credit_short, credit_full = assets.region_photo(conn, writer, facts["region"], work)
+                photo = motion.load_photo(path, theme)
+            elif s.get("public_photos", True):
+                path, credit_short, credit_full = assets.seoul_photo(conn, writer, post["slug"], work)
+                photo = motion.load_photo(path, theme)
+            if photo is not None:
+                variant["photo"] = "clip" if kind == "clip" else "on"   # 실제로 쓴 값으로 기록
+                break
         if photo is None:
-            variant["photo"] = "off"                                # 실제로 쓴 값으로 기록
+            variant["photo"] = "off"
 
         # 3) 장면별 모션 렌더
         segments, offset = [], 0.0

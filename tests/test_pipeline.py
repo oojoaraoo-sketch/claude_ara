@@ -348,3 +348,24 @@ class DoubleNegativeTest(unittest.TestCase):
         out = qa.fill("전월보다 {{chg}}% 낮아졌고 거래는 {{t}}% 늘었습니다", {"chg": -13.2, "t": 5.0})
         self.assertIn("13.2% 낮아졌고", out)
         self.assertNotIn("-13.2", out)
+
+
+class MediaFallbackTest(unittest.TestCase):
+    def test_no_off_variant(self):
+        from pipeline import learn
+        pb = learn.load()
+        for i in range(50):
+            self.assertIn(learn.choose(pb, f"seoul-x-{i}")["photo"], ("on", "clip"))
+
+    def test_people_tags_filtered(self):
+        from pipeline import assets
+        self.assertTrue(assets.PEOPLE_TAGS.search("seoul, woman, street"))
+        self.assertFalse(assets.PEOPLE_TAGS.search("seoul, skyline, apartment, manhattan"))
+
+    def test_seoul_photo_needs_writer(self):
+        import sqlite3, tempfile
+        from pathlib import Path
+        from pipeline import assets
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        self.assertEqual(assets.seoul_photo(conn, object(), "s", Path(tempfile.gettempdir())), (None, None, None))

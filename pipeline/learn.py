@@ -22,7 +22,7 @@ MIN_SAMPLES = 3
 DIMS = {
     "theme": ["midnight", "ember", "paper", "forest"],
     "hook": ["question", "number", "contrast"],
-    "photo": ["on", "clip", "off"],   # on=공개 사진, clip=무료 스톡 영상, off=그라데이션
+    "photo": ["on", "clip"],   # on=공개 사진, clip=무료 스톡 영상 (둘 다 실패할 때만 그라데이션 off)
 }
 HOOK_GUIDE = {
     "question": "hook 장면은 시청자가 답을 궁금해할 질문으로 시작하세요.",

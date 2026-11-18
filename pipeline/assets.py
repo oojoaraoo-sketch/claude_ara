@@ -6,7 +6,7 @@
   - 지도·로고·문서·인물 사진은 제목과 설명으로 걸러 내고, 최종 선택은 Claude가 후보 설명을 읽고 한다.
   - 쓴 자료는 assets 테이블에 URL·작가·라이선스를 남기고 영상 설명과 화면에 출처를 적는다.
   - 내려받기에 실패하면 그림 없이(그라데이션 배경) 진행한다. 영상 제작을 막지 않는다.
-무료 영상 소스(Pexels, Pixabay)는 API 키 가입이 필요해 아직 연결하지 않았다. PROVIDERS에 추가하면 된다.
+구 사진이 없으면 서울 공통 사진(Pixabay 사진 + 위키미디어 서울 풍경)으로 대신한다 (seoul_photo).
 """
 import html
 import json
@@ -133,6 +133,10 @@ def region_photo(conn, writer, region: str, out_dir: Path) -> tuple[Path | None,
         row = conn.execute("SELECT * FROM assets WHERE key = ?", (key,)).fetchone()
     if row["status"] != "ok":
         return None, None, None
+    return _download_photo(row, out_dir)
+
+
+def _download_photo(row, out_dir: Path) -> tuple[Path | None, str | None, str | None]:
     try:
         r = requests.get(row["file_url"], headers=UA, timeout=60)
         r.raise_for_status()
@@ -140,8 +144,69 @@ def region_photo(conn, writer, region: str, out_dir: Path) -> tuple[Path | None,
         path.write_bytes(r.content)
     except Exception:
         return None, None, None
-    short = f"사진: {row['artist']} / {row['license']}"
-    full = f"배경 사진: {row['artist']}, {row['license']}, Wikimedia Commons ({row['page_url']})"
+    site = "Pixabay" if "pixabay.com" in (row["page_url"] or "") else "Wikimedia Commons"
+    short = f"사진: {row['artist']} / {site if site == 'Pixabay' else row['license']}"
+    full = f"배경 사진: {row['artist']}, {row['license']}, {site} ({row['page_url']})"
+    return path, short, full
+
+
+# ---------------------------------------------------------------- 서울 공통 사진 (구 사진이 없을 때)
+PEOPLE_TAGS = re.compile(r"\b(?:woman|man|men|women|girl|boy|people|person|portrait|face|couple|child)\b", re.I)
+SEOUL_QUERIES = ["seoul apartment", "seoul skyline", "seoul cityscape", "han river seoul", "seoul night city"]
+
+
+def _pixabay_photos(query: str) -> list[dict]:
+    key = os.environ.get("PIXABAY_API_KEY", "").strip()
+    if not key:
+        return []
+    r = requests.get("https://pixabay.com/api/", timeout=30, params={
+        "key": key, "q": query, "image_type": "photo", "orientation": "horizontal", "min_width": 1600,
+        "safesearch": "true", "per_page": 30})
+    if r.status_code != 200:
+        return []
+    out = []
+    for h in r.json().get("hits", []):
+        tags = h.get("tags", "")
+        if BAD_WORDS.search(tags) or PEOPLE_TAGS.search(tags):
+            continue
+        if not h.get("largeImageURL"):
+            continue
+        out.append({"title": f"Pixabay {h.get('id')}", "desc": tags, "license": "Pixabay Content License",
+                    "artist": h.get("user") or "Pixabay", "file_url": h["largeImageURL"],
+                    "page_url": h.get("pageURL", "")})
+    return out
+
+
+def seoul_photo(conn, writer, slug: str, out_dir: Path) -> tuple[Path | None, str | None, str | None]:
+    """구 사진이 없을 때 쓰는 서울 공통 풍경 사진. 영상마다 다른 사진을 고르고 최근에 쓴 것은 피한다.
+    Pixabay 주소는 오래 저장하지 말라는 규정이 있어 매번 새로 검색한다."""
+    conn.executescript(SCHEMA)
+    if not hasattr(writer, "_call"):
+        return None, None, None
+    import hashlib
+    h = int(hashlib.sha256(slug.encode()).hexdigest()[:8], 16)
+    used = {r[0] for r in conn.execute(
+        "SELECT page_url FROM assets WHERE key LIKE 'photo:%' ORDER BY fetched_at DESC LIMIT 40")}
+    try:
+        q = SEOUL_QUERIES[h % len(SEOUL_QUERIES)]
+        cands = _pixabay_photos(q) + search(q.replace("seoul", "Seoul"))
+        cands = [c for c in cands if c["page_url"] not in used] or cands
+        if not cands:
+            return None, None, None
+        start = h % max(1, len(cands) - 11)
+        pool = cands[start:start + 12]
+        i = _pick(writer, "서울", pool)
+        if i < 0:
+            return None, None, None
+        c = pool[i]
+    except Exception:
+        return None, None, None
+    path, short, full = _download_photo(c, out_dir)
+    if path is not None:
+        conn.execute("INSERT OR REPLACE INTO assets VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                     (f"photo:{slug}", c["file_url"], c["page_url"], c["license"], c["artist"], c["title"],
+                      "ok", db.now_iso()))
+        conn.commit()
     return path, short, full
 
 
