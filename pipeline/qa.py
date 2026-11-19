@@ -139,7 +139,7 @@ def fill(text: str, facts: dict) -> str:
     return _SAME_TWICE.sub(r"각각 \1", text)
 
 
-_SAME_TWICE = re.compile(r"각각 (\d[\d,.]*[가-힣%]+), \1(?![\d가-힣])")
+_SAME_TWICE = re.compile(r"각각 (\d[\d,.]*[가-힣%]+), \1(?!\d)")
 _DOUBLE_NEG = re.compile(r"-(\d+(?:\.\d+)?%) ?(낮|줄|떨어|내|하락|감소)")
 
 
