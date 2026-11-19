@@ -100,6 +100,12 @@ class QATest(unittest.TestCase):
         self.assertEqual(qa.fill("{{f}}이 {{f}}은 {{g}}로 {{h}}으로 {{f}}이번", f),
                          "노원구가 노원구는 3.2%로 서울로 노원구이번")
         self.assertEqual(qa.fill("{{c}}와는 {{f}}과도", f), "상계동과는 노원구와도")
+        # 끝의 괄호 설명은 건너뛰고 그 앞 글자의 받침으로 고른다
+        self.assertEqual(qa.fill("{{x}}가 {{y}}이", {"x": "극동(105)", "y": "현대(관악)"}),
+                         "극동(105)이 현대(관악)가")
+        # 같은 값을 두 번 나열하지 않는다
+        self.assertEqual(qa.fill("각각 {{p}}, {{q}}으로 {{p}}, 7건", {"p": "6건", "q": "6건"}),
+                         "각각 6건으로 6건, 7건")
 
     def test_render_fills(self):
         out = qa.render(self.draft("거래 {{trade_count}}"), self.facts, {"top10": "|a|"}, "/c.png", "alt")

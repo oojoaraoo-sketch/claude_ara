@@ -100,7 +100,9 @@ _DIGIT_JONG = {"0": 1, "1": 8, "2": 0, "3": 1, "4": 0, "5": 0, "6": 1, "7": 8, "
 
 def _jong(value: str) -> int:
     """마지막 글자의 받침: 0=없음, 8=ㄹ, 그 밖=있음."""
-    s = re.sub(r"[\s)\]}'\".,·]+$", "", value)
+    # 끝의 괄호 설명은 읽지 않으므로 그 앞 글자로 판단한다 ("극동(105)" → "극동이")
+    s = re.sub(r"\s*\([^()]*\)\s*$", "", value) or value
+    s = re.sub(r"[\s)\]}'\".,·]+$", "", s)
     if not s:
         return 0
     c = s[-1]
@@ -132,9 +134,12 @@ def fill(text: str, facts: dict) -> str:
     text = _JOSA_RE.sub(josa, text)
     text = PLACEHOLDER.sub(lambda m: str(facts[m.group(1)]), text)
     # 음수 변화율 뒤에 감소 표현이 오면 부호를 뺀다 ("-13.2% 낮아졌다" → "13.2% 낮아졌다")
-    return _DOUBLE_NEG.sub(r"\1 \2", text)
+    text = _DOUBLE_NEG.sub(r"\1 \2", text)
+    # 같은 값을 두 번 나열한 표현을 줄인다 ("각각 6건, 6건으로" → "각각 6건으로")
+    return _SAME_TWICE.sub(r"각각 \1", text)
 
 
+_SAME_TWICE = re.compile(r"각각 (\d[\d,.]*[가-힣%]+), \1(?![\d가-힣])")
 _DOUBLE_NEG = re.compile(r"-(\d+(?:\.\d+)?%) ?(낮|줄|떨어|내|하락|감소)")
 
 
