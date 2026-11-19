@@ -54,6 +54,17 @@ def check_script(script: dict, facts: dict, cfg: dict) -> list[str]:
     return problems
 
 
+def align_trend(trend: list, facts: dict) -> list:
+    """이번 달 막대의 건수를 글·내레이션(facts)의 건수와 맞춘다.
+
+    글을 쓴 뒤 추가 신고로 DB 건수가 늘면 화면에 '거래 98건'과 막대 숫자 '101건'이 함께 나온다."""
+    digits = "".join(ch for ch in str(facts.get("trade_count", "")) if ch.isdigit())
+    if not trend or not digits:
+        return trend
+    ym, _, median = trend[-1]
+    return list(trend[:-1]) + [(ym, int(digits), median)]
+
+
 def produce(conn, cfg, writer, post, out_dir: Path = VIDEO_DIR) -> tuple[bool, list[str]]:
     facts = json.loads(post["facts_json"])
     spec = json.loads(post["charts"])[0]
@@ -74,7 +85,7 @@ def produce(conn, cfg, writer, post, out_dir: Path = VIDEO_DIR) -> tuple[bool, l
             return False, problems
 
         m = analyze.gu_monthly(conn, spec["sgg"], spec["gu"], spec["ym"], facts["as_of"])
-        trend = m["trend"] if m else []
+        trend = align_trend(m["trend"] if m else [], facts)
 
         s = cfg["shorts"]
         site = cfg["site"]

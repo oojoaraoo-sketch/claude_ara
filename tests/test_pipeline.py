@@ -354,6 +354,15 @@ class DoubleNegativeTest(unittest.TestCase):
         self.assertNotIn("-13.2", out)
 
 
+class AlignTrendTest(unittest.TestCase):
+    def test_last_bar_matches_post_count(self):
+        from pipeline import shorts
+        trend = [("202609", 84, 6.0), ("202610", 101, 6.05)]
+        self.assertEqual(shorts.align_trend(trend, {"trade_count": "98건"})[-1], ("202610", 98, 6.05))
+        self.assertEqual(shorts.align_trend(trend, {})[-1], ("202610", 101, 6.05))
+        self.assertEqual(shorts.align_trend([], {"trade_count": "98건"}), [])
+
+
 class MediaFallbackTest(unittest.TestCase):
     def test_no_off_variant(self):
         from pipeline import learn
