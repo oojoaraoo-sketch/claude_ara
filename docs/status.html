@@ -112,7 +112,7 @@ footer { color: var(--muted); font-size: .82rem }
         <tr><td>평가</td><td>YouTube·Instagram·TikTok 조회수와 반응을 매일 수집, 게시 2일 뒤 채널 평균 대비 점수 계산</td><td><span class="pill warn">수집 시작</span></td></tr>
         <tr><td>개선</td><td>잘된 조합의 비중을 높이고, 주 1회 Claude가 상·하위 영상을 비교해 제목·도입부 교훈 도출</td><td><span class="pill warn">표본 쌓는 중</span></td></tr>
         <tr><td>적용</td><td>교훈과 비중이 다음 영상의 대본 지침과 화면 설정에 자동 반영</td><td><span class="pill ok">연결됨</span></td></tr>
-        <tr><td>매일 점검</td><td>02:00 Claude가 실행 결과와 새 글·영상을 직접 검토하고 고침, 이 페이지 갱신. 11-18 회차는 시작 직후 멈춰 대화에서 대신 수행</td><td><span class="pill warn">11-18 중단 → 수정</span></td></tr>
+        <tr><td>매일 점검</td><td>02:00 Claude가 실행 결과와 새 글·영상을 직접 검토하고 고침, 이 페이지 갱신. 11-19 22:20 회차가 사람 없이 처음으로 끝까지 실행됨</td><td><span class="pill ok">무인 실행 확인</span></td></tr>
         <tr><td>주간 탐색</td><td>월 02:30 인기 Claude 스킬·모션 기법·새 표현을 찾아 기록하고 1개 구현. 2회차: 3D 타임랩스를 매달 한 편 숏츠로 자동 게시하도록 연결 (11-17 첫 제작 예정)</td><td><span class="pill ok">2회차 완료</span></td></tr>
       </tbody>
     </table></div>
@@ -157,6 +157,9 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="tablewrap"><table>
       <thead><tr><th>발견한 문제</th><th>범위</th><th>조치</th></tr></thead>
       <tbody>
+        <tr><td>영상의 이번 달 막대 숫자가 글의 거래 건수와 다름 (금천 98건/101건, 서초 88건/103건)</td><td>11-19 숏츠 2편</td><td>막대를 글 건수에 맞추도록 수정, 테스트 추가 · 사진·글자 겹침은 이상 없음</td></tr>
+        <tr><td>괄호로 끝나는 단지명 뒤 조사 오류(“극동(105)가”), “각각 6건, 6건” 중복 나열</td><td>글 15편</td><td>전부 수정, 글 생성 시 자동 교정·테스트 추가</td></tr>
+        <tr><td>11-19 새 글 8편</td><td>직접 열람</td><td>단위·소재지·수치 해석·근거 없는 단정 이상 없음</td></tr>
         <tr><td>“전월보다 -13.2% 낮아졌다”처럼 음수 부호와 감소 표현이 겹침</td><td>글 13편</td><td>전부 수정, 글 생성 시 자동 교정·테스트 추가</td></tr>
         <tr><td>11-18 새 글 6편</td><td>알려진 오류 패턴 검색</td><td>위 표현 외 이상 없음</td></tr>
         <tr><td>신고가가 수집 기간(2025년 10월~) 안의 비교인데 기준을 안 밝힘</td><td>전체 28편</td><td>글 하단에 기준 표기, '역대 최고' 자동 차단</td></tr>
@@ -186,6 +189,7 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="tablewrap"><table>
       <thead><tr><th>날짜</th><th>변경</th><th>커밋</th></tr></thead>
       <tbody>
+        <tr><td class="date">11-19</td><td>매일 점검(무인 실행 첫 완주): 글 8편·숏츠 2편 검토, 조사·중복 표현 15편 수정과 자동 교정 추가, 영상 막대 숫자를 글 건수에 맞춤</td><td class="c">6167787</td></tr>
         <tr><td class="date">11-19</td><td>01:00 실행이 9월분 글 3편 연속 반려로 중단 → 하단 ‘신고 기한’ 문구를 기한 지난 달엔 ‘해제·정정 신고’로, ‘(1평)’ 숫자 오검출 수정, 지침 보강. 예약 작업 멈춤의 진짜 원인(권한 모드) 확인, 모델 Opus 지정. 재실행: 8편 발행·반려 0, 숏츠 2편 게시, 관광공사 사진 후보 첫 확인</td><td class="c">63ccd75</td></tr>
         <tr><td class="date">11-18</td><td>한국관광공사 관광지 사진(공공누리 1유형) 연결: 구마다 그 구의 사진을 쓸 가능성 확대, 사진 없던 구는 7일 뒤 재검색</td><td class="c">6e59f3e</td></tr>
         <tr><td class="date">11-18</td><td>배경 자료 보강: 배경 없는 영상 실험 제거, 스톡 영상→구 사진→서울 공통 사진(Pixabay·위키미디어) 순으로 대체. 추가 출처 6곳 검토</td><td class="c">64a96e4</td></tr>
