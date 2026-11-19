@@ -2,42 +2,65 @@
   "command": "all",
   "demo": false,
   "errors": [],
-  "collected_new": 226,
+  "collected_new": 0,
   "collect_errors": [],
   "published": [
-    "seoul-gwanak-2026-09",
-    "seoul-seodaemun-2026-09",
-    "seoul-dongjak-2026-09",
-    "seoul-gangbuk-2026-09",
-    "seoul-seongdong-2026-09",
-    "seoul-gwangjin-2026-09",
-    "seoul-yongsan-2026-09",
-    "seoul-jung-2026-09"
+    "seoul-jongno-2026-09",
+    "apt-11710-8b33057861",
+    "apt-11350-4dc18032cc",
+    "apt-11710-fd79903777"
   ],
-  "rejected": [],
+  "rejected": [
+    {
+      "slug": "apt-11305-d99a159da1",
+      "problems": [
+        "2차 검수: 본문 '시세를 확인할 때 참고할 점' 첫째 항목에서 '실거래 신고는 계약 뒤 일정 기간 안에 하면 되기 때문에…'라고 신고 기한을 언급함. 본문·FAQ에서 신고 기한을 언급하지 말라는 지침 위반이므로 삭제 필요(수치 변동 안내는 하단 주석에 자동으로 붙음).",
+        "2차 검수: 표의 날짜는 '계약일'인데 본문에서 '2026-11-10에 신고된 전용 59.98㎡', FAQ에서 '2026-11-09에 9억 2,000만원으로 신고됐습니다'라고 신고일처럼 씀. 계약일 기준 '거래됐습니다'로 고쳐야 함.",
+        "2차 검수: (참고) 115㎡ 최고가를 '이 한 건'이라고 썼지만 표에는 9억 9,500만원 거래가 2026-10-06과 2026-10-28 두 건 있음. 115㎡는 48건이라 '거래가 많지 않다'는 설명도 과하고, 본문이 중위가격을 쓰면서 '평균을 흔든다'고 해 기준이 어긋남."
+      ]
+    },
+    {
+      "slug": "apt-11710-61ccc12266",
+      "problems": [
+        "2차 검수: '최근 거래 내역' 섹션 본문에서 \"실거래 신고는 계약 후 일정 기간 안에 이뤄지기 때문에\"라고 신고 기한을 언급함. 본문·FAQ에서 신고 기한(계약 후 30일)을 언급하지 말라는 지시 위반이며, 수치 변동 안내는 하단 주석에 자동으로 붙으므로 이 문장과 이어지는 기한 관련 설명을 빼거나 기한을 언급하지 않는 표현으로 바꿔야 함."
+      ]
+    },
+    {
+      "slug": "apt-11350-2431213a2d",
+      "problems": [
+        "2차 검수: '최근 거래 내역' 절의 \"실거래 신고는 계약 후 일정 기간 안에 하면 되기 때문에, 최근 몇 주 동안의 거래는 앞으로 더 늘어날 수 있습니다\"는 본문에서 신고 기한을 언급하지 말라는 규칙에 어긋납니다('30일'이라고 적지는 않았지만 신고 기한을 가리킴). 수치 변동 안내는 하단 주석에 자동으로 붙으므로, 이 문장과 바로 뒤의 해제(취소) 신고 안내 문장은 빼거나 신고 기한을 언급하지 않는 표현으로 바꾸세요."
+      ]
+    },
+    {
+      "slug": "apt-11350-38777b606d",
+      "problems": [
+        "2차 검수: 본문 '최근 거래 내역' 섹션의 \"실거래 신고는 계약 후 일정 기간 안에 하면 되므로, 최근 계약 일부는 아직 목록에 반영되지 않았을 수 있습니다\"는 신고 기한을 언급한 것입니다. 본문·FAQ에서는 신고 기한을 다루지 말아야 하고 수치 변동 가능성은 하단 주석에 자동으로 붙으므로, 이 문장을 지워야 합니다."
+      ]
+    }
+  ],
   "usage": {
     "input_tokens": 6,
-    "output_tokens": 3209,
+    "output_tokens": 2990,
     "cache_read_input_tokens": 1663,
     "calls": 3
   },
   "learn": {
     "collected": {
       "youtube": 13,
-      "tiktok": 3
+      "tiktok": 9
     },
-    "scored": 13,
+    "scored": 15,
     "weights": {
       "theme": {
         "midnight": 1.0,
         "ember": 1.0,
         "paper": 1.0,
-        "forest": 1.0
+        "forest": 2.47
       },
       "hook": {
         "question": 1.0,
         "number": 1.0,
-        "contrast": 1.0
+        "contrast": 1.75
       },
       "photo": {
         "on": 1.0,
@@ -47,13 +70,13 @@
     },
     "samples": {
       "theme": {
-        "forest": 2,
+        "forest": 4,
         "midnight": 1,
         "ember": 1
       },
       "hook": {
-        "number": 2,
-        "contrast": 2
+        "contrast": 4,
+        "number": 2
       },
       "photo": {
         "clip": 1,
@@ -68,14 +91,14 @@
   },
   "shorts": {
     "made": [
-      "seoul-geumcheon-2026-10",
-      "seoul-seocho-2026-10"
+      "seoul-seongdong-2026-10",
+      "seoul-gwangjin-2026-10"
     ],
     "failed": [],
     "uploaded": [
-      "SExhQY_feeM",
-      "nRi8f9ENNsc"
+      "9CrJ-yyfMfA",
+      "VNaqP2Gbo04"
     ]
   },
-  "site_posts": 47
+  "site_posts": 51
 }

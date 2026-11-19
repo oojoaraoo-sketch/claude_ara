@@ -4,12 +4,12 @@
    "midnight": 1.0,
    "ember": 1.0,
    "paper": 1.0,
-   "forest": 1.0
+   "forest": 2.47
   },
   "hook": {
    "question": 1.0,
    "number": 1.0,
-   "contrast": 1.0
+   "contrast": 1.75
   },
   "photo": {
    "on": 1.0,
@@ -154,7 +154,29 @@
      "clip": 1.0
     }
    }
+  },
+  {
+   "at": "2026-11-19",
+   "scored": 15,
+   "weights": {
+    "theme": {
+     "midnight": 1.0,
+     "ember": 1.0,
+     "paper": 1.0,
+     "forest": 2.47
+    },
+    "hook": {
+     "question": 1.0,
+     "number": 1.0,
+     "contrast": 1.75
+    },
+    "photo": {
+     "on": 1.0,
+     "off": 1.0,
+     "clip": 1.0
+    }
+   }
   }
  ],
- "updated_at": "2026-11-18T22:37:11+00:00"
+ "updated_at": "2026-11-19T17:13:06+00:00"
 }
