@@ -9,6 +9,11 @@
    "views": 0,
    "likes": 0,
    "comments": 0
+  },
+  "2026-11-20": {
+   "views": 0,
+   "likes": 0,
+   "comments": 0
   }
  },
  "seoul-seodaemun-2026-10": {
@@ -18,6 +23,11 @@
    "comments": 0
   },
   "2026-11-19": {
+   "views": 0,
+   "likes": 0,
+   "comments": 0
+  },
+  "2026-11-20": {
    "views": 0,
    "likes": 0,
    "comments": 0
@@ -33,11 +43,21 @@
    "views": 0,
    "likes": 0,
    "comments": 0
+  },
+  "2026-11-20": {
+   "views": 0,
+   "likes": 0,
+   "comments": 0
   }
  },
  "seoul-seocho-2026-10": {
   "2026-11-19": {
    "views": 0,
+   "likes": 0,
+   "comments": 0
+  },
+  "2026-11-20": {
+   "views": 3,
    "likes": 0,
    "comments": 0
   }
@@ -47,10 +67,41 @@
    "views": 0,
    "likes": 0,
    "comments": 0
+  },
+  "2026-11-20": {
+   "views": 0,
+   "likes": 0,
+   "comments": 0
   }
  },
  "seoul-yeongdeungpo-2026-10": {
   "2026-11-19": {
+   "views": 0,
+   "likes": 0,
+   "comments": 0
+  },
+  "2026-11-20": {
+   "views": 0,
+   "likes": 0,
+   "comments": 0
+  }
+ },
+ "seoul-geumcheon-2026-10": {
+  "2026-11-20": {
+   "views": 96,
+   "likes": 0,
+   "comments": 0
+  }
+ },
+ "seoul-yongsan-2026-10": {
+  "2026-11-20": {
+   "views": 0,
+   "likes": 0,
+   "comments": 0
+  }
+ },
+ "seoul-jung-2026-10": {
+  "2026-11-20": {
    "views": 0,
    "likes": 0,
    "comments": 0
