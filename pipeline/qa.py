@@ -17,6 +17,9 @@ KOREAN_NUMBER = re.compile(r"(?:육십|삼십|팔십오?)\s?(?:제곱미터|㎡)
 PRICE_SHRINK = re.compile(r"(?:중위\s?가(?:격)?|가격)[^.\n]{0,30}(?:모두|함께|둘 다)\s?(?:전월보다\s?)?줄")
 # 수집 기간(high_since) 안의 비교일 뿐이라 '역대·사상 최고'는 근거 없음
 ALL_TIME = re.compile(r"역대\s?최고|사상\s?최고")
+# 중간값(중위값)을 최빈값처럼 '가장 많이 거래된 가격대'로 설명하는 해석 오류
+MEDIAN_AS_MODE = re.compile(r"(?:중간값|중간 가격|중위\s?(?:가격|거래가|가|값))[^.\n]{0,60}"
+                            r"(?:많이 거래된|거래가 (?:가장 )?많이 몰린|가장 많이 몰린) 가격대")
 
 REQUIRED_MARKERS = {
     "gu_monthly": {"CHART", "TABLE:top10"},
@@ -75,6 +78,8 @@ def check(kind: str, draft: dict, facts: dict, cfg: dict) -> list[str]:
         problems.append(f"표현 오류: '{mt.group()}' → 가격은 '내렸다/낮아졌다', '줄었다'는 거래량에만")
     for mt in ALL_TIME.finditer(all_text):
         problems.append(f"근거 없는 표현: '{mt.group()}' → 신고가는 {{{{high_since}}}} 이후 기록 기준일 뿐입니다")
+    for mt in MEDIAN_AS_MODE.finditer(all_text):
+        problems.append(f"해석 오류: '{mt.group()}' → 중간값은 가격을 순서대로 늘어놓았을 때 가운데 값입니다 (가장 많이 거래된 가격대가 아님)")
     for phrase in cfg["quality"]["banned_phrases"]:
         if phrase in all_text:
             problems.append(f"금지 표현 포함: '{phrase}'")

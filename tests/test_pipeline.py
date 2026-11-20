@@ -71,6 +71,12 @@ class QATest(unittest.TestCase):
         ok = qa.check("gu_monthly", self.draft("거래량은 줄고 중위가는 내렸습니다."), self.facts, self.cfg)
         self.assertEqual(ok, [])
 
+    def test_median_as_mode_rejected(self):
+        p = qa.check("gu_monthly", self.draft("중간값은 이 범위의 가운데쯤에 있어 실제로 많이 거래된 가격대를 보여줍니다."), self.facts, self.cfg)
+        self.assertTrue(any("해석 오류" in x for x in p))
+        ok = qa.check("gu_monthly", self.draft("중간값은 가격을 순서대로 늘어놓았을 때 가운데 값입니다."), self.facts, self.cfg)
+        self.assertEqual(ok, [])
+
     def test_raw_number_rejected(self):
         p = qa.check("gu_monthly", self.draft("거래는 135건으로 늘었습니다."), self.facts, self.cfg)
         self.assertTrue(any("135" in x for x in p))
@@ -374,6 +380,21 @@ class MediaFallbackTest(unittest.TestCase):
         from pipeline import assets
         self.assertTrue(assets.PEOPLE_TAGS.search("seoul, woman, street"))
         self.assertFalse(assets.PEOPLE_TAGS.search("seoul, skyline, apartment, manhattan"))
+
+    def test_pixabay_clip_requires_korea_tags(self):
+        import os
+        from unittest import mock
+        from pipeline import assets
+        hits = {"hits": [
+            {"id": 1, "duration": 20, "tags": "temple, palm trees, india", "videos": {"medium": {"url": "u1"}}},
+            {"id": 2, "duration": 20, "tags": "seoul, skyline, night", "videos": {"medium": {"url": "u2"}}},
+            {"id": 3, "duration": 20, "tags": "korea, people, street", "videos": {"medium": {"url": "u3"}}},
+        ]}
+        resp = mock.Mock(status_code=200)
+        resp.json.return_value = hits
+        with mock.patch.dict(os.environ, {"PIXABAY_API_KEY": "x"}),                 mock.patch.object(assets.requests, "get", return_value=resp):
+            out = assets._pixabay("seoul skyline")
+        self.assertEqual([c["id"] for c in out], ["2"])
 
     def test_seoul_photo_needs_writer(self):
         import sqlite3, tempfile

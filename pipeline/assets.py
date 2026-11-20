@@ -268,7 +268,9 @@ def seoul_photo(conn, writer, slug: str, out_dir: Path) -> tuple[Path | None, st
 # 두 서비스 모두 자체 라이선스로 상업적 사용·편집 허용, 출처 표기는 선택이지만 우리는 항상 표기한다.
 # 인물이 주제인 클립을 피하려고 도시 풍경 검색어만 쓴다. 키가 없으면 조용히 건너뛴다.
 STOCK_QUERIES = ["seoul skyline", "seoul city night", "seoul apartment", "han river seoul", "korea city aerial",
-                 "seoul aerial", "city traffic night", "apartment buildings"]
+                 "seoul aerial"]
+# 검색어에 seoul 이 있어도 다른 나라 영상이 섞여 나온다 (11-21 중구 영상에 사원·야자수 배경)
+KOREA_TAGS = re.compile(r"seoul|korea|서울|한국|han river|한강", re.I)
 
 
 def _pexels(query: str) -> list[dict]:
@@ -306,6 +308,9 @@ def _pixabay(query: str) -> list[dict]:
         vids = v.get("videos", {})
         f = vids.get("medium") or vids.get("small")
         if not f or not f.get("url") or not (6 <= v.get("duration", 0) <= 60):
+            continue
+        tags = v.get("tags", "")
+        if not KOREA_TAGS.search(tags) or PEOPLE_TAGS.search(tags) or BAD_WORDS.search(tags):
             continue
         out.append({"source": "pixabay", "id": str(v["id"]), "file_url": f["url"], "page_url": v.get("pageURL", ""),
                     "artist": v.get("user", "Pixabay"), "license": "Pixabay Content License", "title": query})
