@@ -381,6 +381,17 @@ class MediaFallbackTest(unittest.TestCase):
         self.assertTrue(assets.PEOPLE_TAGS.search("seoul, woman, street"))
         self.assertFalse(assets.PEOPLE_TAGS.search("seoul, skyline, apartment, manhattan"))
 
+    def test_instagram_insights_views(self):
+        from unittest import mock
+        from pipeline import metrics
+        ok = mock.Mock(status_code=200)
+        ok.json.return_value = {"data": [{"name": "views", "total_value": {"value": 120}},
+                                         {"name": "shares", "values": [{"value": 3}]}]}
+        with mock.patch.object(metrics.requests, "get", return_value=ok):
+            self.assertEqual(metrics._ig_insights("1", "t"), (120, 3))
+        with mock.patch.object(metrics.requests, "get", return_value=mock.Mock(status_code=400)):
+            self.assertEqual(metrics._ig_insights("1", "t"), (None, None))
+
     def test_pixabay_clip_requires_korea_tags(self):
         import os
         from unittest import mock

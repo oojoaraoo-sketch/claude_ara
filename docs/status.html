@@ -80,12 +80,12 @@ footer { color: var(--muted); font-size: .82rem }
       <div class="ch ok"><span class="name">YouTube 숏츠</span><span class="pill ok">운영 중</span>
         <span class="num">23 <small>편 공개</small></span>
         <span class="note">누적 조회 약 1,400 · 3D 타임랩스 438, 노원 247, 강남 213 · 대부분 1~2일 뒤 조회 정체</span></div>
-      <div class="ch warn"><span class="name">Instagram 릴스</span><span class="pill warn">관찰</span>
+      <div class="ch ok"><span class="name">Instagram 릴스</span><span class="pill ok">운영 중</span>
         <span class="num">14 <small>편</small></span>
-        <span class="note">게시는 정상 · 조회 수가 수집되지 않음, 좋아요 0 → 확인 필요</span></div>
-      <div class="ch bad"><span class="name">TikTok</span><span class="pill bad">멈춤</span>
-        <span class="num">7 <small>편 공개</small></span>
-        <span class="note">11-20 예약 작업이 권한 모드 때문에 멈춤 · 7편 모두 조회 0 → 원인 조사</span></div>
+        <span class="note">조회 수 수집을 11-21 추가 (그전엔 좋아요·댓글만) · 11-22 실행부터 반영</span></div>
+      <div class="ch warn"><span class="name">TikTok</span><span class="pill warn">관찰</span>
+        <span class="num">9 <small>편 공개</small></span>
+        <span class="note">11-21 용산·중구 게시 · 금천 96회로 첫 조회, 11-15·16 게시 5편은 여전히 0</span></div>
       <div class="ch ok"><span class="name">데이터 수집</span><span class="pill ok">정상</span>
         <span class="num">25 <small>개 구</small></span>
         <span class="note">최근 3개월 매일 재수집 · 14개월 보충</span></div>
@@ -112,7 +112,7 @@ footer { color: var(--muted); font-size: .82rem }
         <tr><td>평가</td><td>YouTube·Instagram·TikTok 조회수와 반응을 매일 수집, 게시 2일 뒤 채널 평균 대비 점수 계산</td><td><span class="pill warn">수집 시작</span></td></tr>
         <tr><td>개선</td><td>잘된 조합의 비중을 높이고, 주 1회 Claude가 상·하위 영상을 비교해 제목·도입부 교훈 도출</td><td><span class="pill warn">표본 쌓는 중</span></td></tr>
         <tr><td>적용</td><td>교훈과 비중이 다음 영상의 대본 지침과 화면 설정에 자동 반영</td><td><span class="pill ok">연결됨</span></td></tr>
-        <tr><td>매일 점검</td><td>02:00 Claude가 실행 결과와 새 글·영상을 직접 검토하고 고침, 이 페이지 갱신. 11-20·11-21 회차가 다시 ‘승인 요청’ 모드로 시작돼 첫 명령에서 멈춤</td><td><span class="pill bad">멈춤</span></td></tr>
+        <tr><td>매일 점검</td><td>02:00 Claude가 실행 결과와 새 글·영상을 직접 검토하고 고침, 이 페이지 갱신. 11-20·11-21 회차는 ‘승인 요청’ 모드로 멈춤 → 11-21 작업 설정을 자동으로 바꿈, 밀린 검토는 대화에서 처리</td><td><span class="pill warn">11-22 재확인</span></td></tr>
         <tr><td>주간 탐색</td><td>월 02:30 인기 Claude 스킬·모션 기법·새 표현을 찾아 기록하고 1개 구현. 2회차: 3D 타임랩스를 매달 한 편 숏츠로 자동 게시하도록 연결 (11-17 첫 제작 예정)</td><td><span class="pill ok">2회차 완료</span></td></tr>
       </tbody>
     </table></div>
@@ -123,7 +123,7 @@ footer { color: var(--muted); font-size: .82rem }
       <h2>사용자가 할 일</h2>
       <ul>
         <li class="done">크롬에서 TikTok 다시 로그인 (11-19)</li>
-        <li><b>예약 작업 4개(틱톡·매일 점검·주간 탐색·이슈 한입 현황판)의 권한 모드를 작업 설정에서 ‘자동’으로</b> — 11-20·11-21 새 실행이 모두 ‘승인 요청’ 모드로 시작돼 멈춤</li>
+        <li class="done">예약 작업 4개 권한 모드를 작업 설정에서 ‘자동’으로 (11-21, TikTok 실행 완주 확인)</li>
         <li class="done">예약 작업 모델 Opus (11-20부터 적용 확인)</li>
         <li class="done">Instagram 계정을 ‘실거래가 리포트’ 포트폴리오에 재연결 (11-18)</li>
         <li class="done">Meta 개발자 계정 확인 (Instagram 재개)</li>
@@ -143,9 +143,9 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="box">
       <h2>Claude가 할 일</h2>
       <ol>
-        <li>권한 모드 변경 뒤 예약 작업 완주 확인, 밀린 점검(새 글 10편·숏츠 4편)과 TikTok 업로드 처리</li>
-        <li>TikTok 조회 0 원인 조사</li>
-        <li>Instagram 조회 수 미수집 원인 확인</li>
+        <li>11-22 02:00 매일 점검이 자동 모드로 완주하는지 확인</li>
+        <li>TikTok 11-15·16 게시 5편만 계속 0인 이유 확인</li>
+        <li>Instagram 조회 수가 11-22 실행에서 들어오는지 확인</li>
         <li>YouTube 조회가 1~2일 뒤 멈추는 패턴 → 도입부·제목 앞 지역명 실험</li>
         <li>매 실행 후 새 글·숏츠 직접 품질 검토</li>
         <li>12-01 이후 10월분 3D 타임랩스(실제 구 경계 모양) 첫 게시 확인</li>
@@ -192,6 +192,7 @@ footer { color: var(--muted); font-size: .82rem }
     <div class="tablewrap"><table>
       <thead><tr><th>날짜</th><th>변경</th><th>커밋</th></tr></thead>
       <tbody>
+        <tr><td class="date">11-21</td><td>밀린 점검: 글 10편 검토, 2편 표현 수정·중간값 오해석 자동 검사 추가. 중구 숏츠 배경이 서울과 무관한 영상 → 배경 영상은 서울·한국 태그 있는 것만. Instagram 조회·공유 수집 추가. TikTok 첫 조회(금천 96)</td><td class="c">7a985f1</td></tr>
         <tr><td class="date">11-21</td><td>현황·성과 분석: 11-20·11-21 예약 실행이 권한 모드 때문에 모두 멈춘 것 확인(모델은 Opus 적용). YouTube 누적 약 1,400회(1~2일 뒤 정체), Instagram 조회 미수집, TikTok 0</td><td class="c">—</td></tr>
         <tr><td class="date">11-19</td><td>TikTok 재로그인 뒤 서초·금천 2편 게시, 7편 모두 조회 0 확인. 크롬 2개 연결 시 고르는 법을 작업 지침에 추가</td><td class="c">—</td></tr>
         <tr><td class="date">11-19</td><td>매일 점검(무인 실행 첫 완주): 글 8편·숏츠 2편 검토, 조사·중복 표현 15편 수정과 자동 교정 추가, 영상 막대 숫자를 글 건수에 맞춤</td><td class="c">6167787</td></tr>

@@ -123,10 +123,30 @@ def collect_instagram(conn) -> int:
     n = 0
     for it in r.json().get("data", []):
         if it["id"] in by_id:
-            _save(conn, by_id[it["id"]], "instagram", None, _int(it.get("like_count")), _int(it.get("comments_count")))
+            views, shares = _ig_insights(it["id"], tok)
+            _save(conn, by_id[it["id"]], "instagram", views, _int(it.get("like_count")), _int(it.get("comments_count")),
+                  shares=shares)
             n += 1
     conn.commit()
     return n
+
+
+def _ig_insights(media_id: str, tok: str) -> tuple[int | None, int | None]:
+    """릴스 조회 수·공유 수 (인사이트 권한 필요). 실패하면 (None, None)."""
+    try:
+        r = requests.get(f"https://graph.facebook.com/{media_id}/insights", timeout=30,
+                         params={"metric": "views,shares", "access_token": tok})
+        if r.status_code != 200:
+            return None, None
+        got = {}
+        for d in r.json().get("data", []):
+            v = (d.get("total_value") or {}).get("value")
+            if v is None and d.get("values"):
+                v = d["values"][0].get("value")
+            got[d.get("name")] = _int(v)
+        return got.get("views"), got.get("shares")
+    except Exception:
+        return None, None
 
 
 def collect_tiktok(conn) -> int:
